@@ -1,0 +1,60 @@
+<div class="field">
+  <label for="title">Event title</label>
+  <input type="text" id="title" name="title" maxlength="120" required value="<%= values.title || '' %>">
+</div>
+
+<div class="row2">
+  <div class="field">
+    <label for="date">Date</label>
+    <input type="date" id="date" name="date" required value="<%= values.date || '' %>">
+  </div>
+  <div class="field">
+    <label for="time">Start time</label>
+    <input type="time" id="time" name="time" value="<%= values.time || '' %>">
+  </div>
+</div>
+
+<div class="field">
+  <label for="end_time">End time (optional)</label>
+  <input type="time" id="end_time" name="end_time" value="<%= values.end_time || '' %>">
+  <div class="hint">Used for the guest's "add to calendar" entry. Defaults to 2 hours.</div>
+</div>
+
+<div class="field">
+  <label for="location">Location (optional)</label>
+  <input type="text" id="location" name="location" maxlength="300" value="<%= values.location || '' %>" placeholder="Address or a maps link">
+</div>
+
+<div class="field">
+  <label for="description">Details (optional)</label>
+  <textarea id="description" name="description" maxlength="4000"><%= values.description || '' %></textarea>
+</div>
+
+<div class="field">
+  <label for="rsvp_deadline">RSVP by (optional)</label>
+  <input type="date" id="rsvp_deadline" name="rsvp_deadline" value="<%= values.rsvp_deadline || '' %>">
+  <div class="hint">After this date the RSVP page becomes read-only.</div>
+</div>
+
+<div class="field">
+  <label for="theme">Theme</label>
+  <select id="theme" name="theme">
+    <option value="modern" <%= values.theme === 'modern' ? 'selected' : '' %>>Clean &amp; modern</option>
+    <option value="warm" <%= values.theme === 'warm' ? 'selected' : '' %>>Warm &amp; friendly</option>
+    <option value="elegant" <%= values.theme === 'elegant' ? 'selected' : '' %>>Elegant invitation</option>
+  </select>
+</div>
+
+<div class="checkbox">
+  <input type="checkbox" id="has_food" name="has_food" <%= values.has_food ? 'checked' : '' %>>
+  <label for="has_food">This event has food</label>
+</div>
+<div class="checkbox" id="dietrow" style="margin-left:26px; display:<%= values.has_food ? 'flex' : 'none' %>">
+  <input type="checkbox" id="ask_dietary" name="ask_dietary" <%= values.ask_dietary ? 'checked' : '' %>>
+  <label for="ask_dietary">Ask guests for dietary requirements</label>
+</div>
+
+<div class="checkbox">
+  <input type="checkbox" id="guests_see_each_other" name="guests_see_each_other" <%= values.guests_see_each_other ? 'checked' : '' %>>
+  <label for="guests_see_each_other">Let guests see who else is coming</label>
+</div>

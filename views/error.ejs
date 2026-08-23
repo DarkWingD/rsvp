@@ -1,0 +1,9 @@
+<%- include('partials/head', { title: (typeof title !== 'undefined' ? title : 'Error') }) %>
+
+<div class="card">
+  <h1><%= typeof title !== 'undefined' ? title : 'Something went wrong' %></h1>
+  <p class="muted"><%= typeof message !== 'undefined' ? message : 'An unexpected error occurred.' %></p>
+  <p style="margin-top:12px"><a class="btn" href="/">Back to start</a></p>
+</div>
+
+<%- include('partials/foot') %>

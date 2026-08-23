@@ -1,0 +1,21 @@
+[Unit]
+Description=RSVP system (Node)
+After=network.target
+
+[Service]
+Type=simple
+User=rsvp
+WorkingDirectory=/opt/rsvp/app
+# Configuration is loaded from .env by the app itself (dotenv). Keep .env in WorkingDirectory.
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=3
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

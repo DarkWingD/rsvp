@@ -1,0 +1,37 @@
+{
+  "name": "rsvp",
+  "version": "0.1.0",
+  "description": "A simple, privacy-respecting, self-hosted RSVP system for friends & family. No logins for guests; organiser auth via Cloudflare Access.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DarkWingD/rsvp.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "css": "tailwindcss -i src/styles.css -o public/app.css",
+    "css:watch": "tailwindcss -i src/styles.css -o public/app.css --watch",
+    "css:build": "tailwindcss -i src/styles.css -o public/app.css --minify",
+    "seed": "node src/seed.js",
+    "purge": "node src/purge.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.1.0",
+    "resend": "^4.1.2"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

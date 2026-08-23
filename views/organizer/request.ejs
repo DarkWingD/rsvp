@@ -1,0 +1,29 @@
+<%- include('../partials/head', { title: 'Request to host an event', turnstile: turnstile }) %>
+<%- include('../partials/appnav') %>
+
+<h1>Request to host an event</h1>
+<p class="muted">Hosting is approved by the site owner to keep this for friends &amp; family.
+  Tell us about your event and we'll review it.</p>
+
+<% if (paused) { %><div class="banner banner-info">New event requests are paused right now. Please check back later.</div><% } %>
+<% if (error) { %><div class="banner banner-error"><%= error %></div><% } %>
+
+<div class="card">
+  <form method="post" action="/organizer/request">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field">
+      <label for="display_name">Your name (optional)</label>
+      <input type="text" id="display_name" name="display_name" maxlength="120" value="<%= values.display_name || '' %>">
+    </div>
+
+    <%- include('../partials/event_fields', { values: values }) %>
+
+    <% if (turnstile && turnstileSiteKey) { %>
+      <div class="cf-turnstile" data-sitekey="<%= turnstileSiteKey %>" style="margin:14px 0"></div>
+    <% } %>
+
+    <button class="btn btn-primary btn-block" type="submit" <%= paused ? 'disabled' : '' %>>Send request</button>
+  </form>
+</div>
+
+<%- include('../partials/foot') %>

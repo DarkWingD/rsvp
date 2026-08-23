@@ -1,0 +1,9 @@
+<%- include('../partials/head', { title: 'Not available' }) %>
+
+<div class="card">
+  <h1>Hosting isn't available</h1>
+  <p class="muted">Your account isn't able to host events<%= status === 'revoked' ? ' any longer' : '' %>.
+    If you think this is a mistake, please contact the site owner.</p>
+</div>
+
+<%- include('../partials/foot') %>

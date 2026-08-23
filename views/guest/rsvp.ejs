@@ -1,0 +1,91 @@
+<%- include('../partials/head', { title: event.title, theme: event.theme }) %>
+<%
+  const rlabels = {
+    cancelled: 'This event has been cancelled.',
+    closed: 'RSVPs have closed for this event.',
+    past: 'This event has already taken place.',
+    unavailable: "This event isn't currently open for responses."
+  };
+  const rmap = { yes: "Yes, attending", no: "Can't make it", maybe: 'Maybe', pending: 'No response yet' };
+  const canCalendar = readonly !== 'cancelled' && readonly !== 'unavailable';
+%>
+
+<div class="card">
+  <div class="guest-head">
+    <% if (event.theme === 'elegant') { %><div class="eyebrow">You're invited</div><% } %>
+    <h1><%= event.title %></h1>
+    <div class="meta">
+      <span class="ico">📅</span>
+      <span><%= fmtDateTime(event.starts_at) %><% if (event.ends_at) { %> – <%= fmtTime(event.ends_at) %><% } %></span>
+    </div>
+    <% if (event.location) { %>
+    <div class="meta"><span class="ico">📍</span><span><%= event.location %></span></div>
+    <% } %>
+    <% if (event.description) { %>
+    <p style="margin-top:10px; white-space:pre-line"><%= event.description %></p>
+    <% } %>
+  </div>
+</div>
+
+<% if (readonly) { %>
+  <div class="banner <%= readonly === 'cancelled' ? 'banner-error' : 'banner-info' %>"><%= rlabels[readonly] %></div>
+  <div class="card">
+    <p>Your response: <span class="tag tag-<%= guest.rsvp %>"><%= rmap[guest.rsvp] %></span></p>
+    <% if (guest.rsvp === 'yes' && guest.party_size > 1) { %><p class="muted small">Party of <%= guest.party_size %></p><% } %>
+  </div>
+<% } else { %>
+
+  <% if (typeof error !== 'undefined' && error) { %><div class="banner banner-error"><%= error %></div><% } %>
+  <% if (saved) { %>
+    <div class="banner banner-success">
+      <% if (guest.rsvp === 'yes') { %><strong>You're in! 🎉</strong> See you there.
+      <% } else if (guest.rsvp === 'no') { %>Thanks for letting us know.
+      <% } else { %>Thanks — you're marked as <em>maybe</em>.<% } %>
+    </div>
+  <% } %>
+
+  <div class="card">
+    <form method="post" action="/r/<%= guest.token %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <p style="font-weight:600; margin-top:0">Hi <%= guest.label %> — can you make it?</p>
+
+      <div class="rsvp-options">
+        <label class="rsvp-choice sel-yes"><input type="radio" name="rsvp" value="yes" <%= guest.rsvp === 'yes' ? 'checked' : '' %>> Yes, I'll be there</label>
+        <label class="rsvp-choice sel-maybe"><input type="radio" name="rsvp" value="maybe" <%= guest.rsvp === 'maybe' ? 'checked' : '' %>> Maybe</label>
+        <label class="rsvp-choice sel-no"><input type="radio" name="rsvp" value="no" <%= guest.rsvp === 'no' ? 'checked' : '' %>> Can't make it</label>
+      </div>
+
+      <div class="field">
+        <label for="party_size">How many coming in total (including you)?</label>
+        <input type="number" id="party_size" name="party_size" min="1" max="20" value="<%= guest.party_size || 1 %>">
+      </div>
+
+      <% if (event.ask_dietary) { %>
+      <div class="field">
+        <label for="dietary">Dietary requirements (optional)</label>
+        <input type="text" id="dietary" name="dietary" maxlength="500" value="<%= guest.dietary || '' %>" placeholder="e.g. vegetarian, nut allergy">
+      </div>
+      <% } %>
+
+      <div class="field">
+        <label for="notes">Anything to add? (optional)</label>
+        <textarea id="notes" name="notes" maxlength="500"><%= guest.notes || '' %></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-block" type="submit">Save RSVP</button>
+    </form>
+  </div>
+<% } %>
+
+<% if (canCalendar) { %>
+  <a class="btn btn-block" href="/r/<%= guest.token %>/calendar.ics">📅 Add to calendar</a>
+<% } %>
+
+<% if (event.guests_see_each_other && typeof attendees !== 'undefined' && attendees.length) { %>
+  <div class="card" style="margin-top:16px">
+    <h2>Who's coming</h2>
+    <p class="muted"><%= attendees.map(a => a.label).join(', ') %></p>
+  </div>
+<% } %>
+
+<%- include('../partials/foot') %>

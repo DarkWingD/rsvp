@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex, nofollow">
+  <title><%= typeof title !== 'undefined' ? title : 'RSVP' %> · RSVP</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+  <% if (typeof turnstile !== 'undefined' && turnstile) { %>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <% } %>
+</head>
+<body class="theme-<%= (typeof theme !== 'undefined' && theme) ? theme : 'app' %>">
+  <main class="page<%= (typeof wide !== 'undefined' && wide) ? ' page-wide' : '' %>">

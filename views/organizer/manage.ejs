@@ -1,0 +1,110 @@
+<%- include('../partials/head', { title: event.title }) %>
+<%- include('../partials/appnav') %>
+<% var guestUrl = function (g) { return baseUrl + '/r/' + g.token; }; %>
+
+<div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:6px">
+  <h1 style="margin:0"><%= event.title %></h1>
+  <span class="tag tag-<%= event.status %>"><%= event.status %></span>
+</div>
+<div class="meta"><span class="ico">📅</span><span><%= fmtDateTime(event.starts_at) %><% if (event.ends_at) { %> – <%= fmtTime(event.ends_at) %><% } %></span></div>
+<% if (event.location) { %><div class="meta"><span class="ico">📍</span><span><%= event.location %></span></div><% } %>
+
+<% if (event.status === 'cancelled') { %>
+  <div class="banner banner-error" style="margin-top:12px">This event is cancelled. Guests see a cancelled notice on their links.</div>
+<% } else if (event.status === 'pending') { %>
+  <div class="banner banner-info" style="margin-top:12px">Awaiting approval — guest links won't work until the site owner approves you.</div>
+<% } %>
+
+<div class="btn-row" style="margin:14px 0">
+  <a class="btn btn-sm" href="/organizer/events/<%= event.id %>/edit">Edit</a>
+  <a class="btn btn-sm" href="/organizer/events/<%= event.id %>/export.csv">Export CSV</a>
+  <% if (event.status === 'live' || event.status === 'pending') { %>
+  <form class="inline-form" method="post" action="/organizer/events/<%= event.id %>/cancel" data-confirm="Cancel this event? Guests will see a cancelled notice.">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button class="btn btn-sm btn-danger">Cancel event</button>
+  </form>
+  <% } %>
+</div>
+
+<div class="card">
+  <div class="stats">
+    <span class="stat"><b><%= stats.yes %></b> yes</span>
+    <span class="stat"><b><%= stats.maybe %></b> maybe</span>
+    <span class="stat"><b><%= stats.no %></b> no</span>
+    <span class="stat muted"><%= stats.pending %> no reply</span>
+    <span class="stat">·&nbsp; <b><%= stats.headcount %></b> total coming</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Add guests</h2>
+  <form method="post" action="/organizer/events/<%= event.id %>/guests">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field">
+      <label for="names">One name per line</label>
+      <textarea id="names" name="names" placeholder="Sarah&#10;Tom&#10;Priya"></textarea>
+      <div class="hint">Each guest gets their own private link. Max <%= caps.guestsPerEvent %> guests per event.</div>
+    </div>
+    <button class="btn btn-primary" type="submit">Add guests</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Guests (<%= allCount %>)</h2>
+
+  <div class="filters">
+    <% ['all','noreply','yes','maybe','no'].forEach(function (f) { %>
+      <a class="btn btn-sm <%= filter === f ? 'active' : '' %>" href="/organizer/events/<%= event.id %>?filter=<%= f %>"><%= f === 'noreply' ? 'no reply' : f %></a>
+    <% }) %>
+  </div>
+
+  <% if (!guests.length) { %>
+    <p class="muted">No guests<%= filter !== 'all' ? ' match this filter' : ' yet — add some above' %>.</p>
+  <% } else { %>
+    <button class="btn btn-sm" data-copy-target="#alllinks" style="margin-bottom:10px">Copy all shown links</button>
+    <textarea id="alllinks" style="position:absolute; left:-9999px" aria-hidden="true"><% guests.forEach(function (g) { %><%= guestUrl(g) %>
+<% }) %></textarea>
+
+    <table class="table">
+      <thead><tr><th>Name</th><th>RSVP</th><th>Link</th><th></th></tr></thead>
+      <tbody>
+        <% guests.forEach(function (g) { %>
+        <tr>
+          <td>
+            <%= g.label %><% if (g.rsvp === 'yes' && g.party_size > 1) { %> <span class="muted small">×<%= g.party_size %></span><% } %>
+            <% if (g.dietary) { %><br><span class="muted small">🍽 <%= g.dietary %></span><% } %>
+            <% if (g.notes) { %><br><span class="muted small">💬 <%= g.notes %></span><% } %>
+          </td>
+          <td><span class="tag tag-<%= g.rsvp %>"><%= g.rsvp === 'pending' ? 'no reply' : g.rsvp %></span></td>
+          <td><button class="btn btn-sm" data-copy="<%= guestUrl(g) %>">Copy</button></td>
+          <td style="white-space:nowrap">
+            <form class="inline-form" method="post" action="/organizer/events/<%= event.id %>/guests/<%= g.id %>/regenerate" data-confirm="Make a new link? The old link will stop working.">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-sm" title="New link">↻</button>
+            </form>
+            <form class="inline-form" method="post" action="/organizer/events/<%= event.id %>/guests/<%= g.id %>/delete" data-confirm="Remove this guest?">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-sm btn-danger" title="Remove">✕</button>
+            </form>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<% if (event.ask_dietary && dietary.length) { %>
+  <div class="card">
+    <h2>Dietary requirements</h2>
+    <ul>
+      <% dietary.forEach(function (d) { %>
+        <li><strong><%= d.label %></strong><% if (d.party_size > 1) { %> (×<%= d.party_size %>)<% } %>: <%= d.dietary %></li>
+      <% }) %>
+    </ul>
+  </div>
+<% } %>
+
+<p><a href="/organizer">← Back to your events</a></p>
+
+<%- include('../partials/foot') %>

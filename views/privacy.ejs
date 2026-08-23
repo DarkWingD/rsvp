@@ -1,0 +1,23 @@
+<%- include('partials/head', { title: 'Privacy' }) %>
+
+<div class="card">
+  <h1>Privacy &amp; terms</h1>
+  <p class="muted">This is a small, personal project run for friends &amp; family. Use at your own risk.</p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><strong>Organisers:</strong> your email address (via Cloudflare Access) and the event details you enter.</li>
+    <li><strong>Guests:</strong> the name/label the organiser gives you and your response (Yes/No/Maybe).
+      Party size, dietary notes and comments are optional and only asked when relevant.</li>
+  </ul>
+  <p>We do not require guest accounts, and the app does not log your IP address or device.</p>
+
+  <h2>How long we keep it</h2>
+  <p>Event data and guest responses are automatically deleted about <strong><%= (typeof purgeDays !== 'undefined' ? purgeDays : 30) %> days</strong>
+     after the event date.</p>
+
+  <h2>Your links</h2>
+  <p>Guest links are private — anyone with your link can see and change your response, so please don't share it.</p>
+</div>
+
+<%- include('partials/foot') %>

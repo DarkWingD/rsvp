@@ -1,0 +1,34 @@
+<%- include('../partials/head', { title: 'Your events' }) %>
+<%- include('../partials/appnav') %>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+  <h1 style="margin:0">Your events</h1>
+  <a class="btn btn-primary" href="/organizer/events/new">+ New event</a>
+</div>
+
+<% if (!events.length) { %>
+  <div class="card"><p class="muted">No events yet — create your first one.</p></div>
+<% } %>
+
+<% events.forEach(function (e) { %>
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start">
+      <div>
+        <h2 style="margin-bottom:4px"><%= e.title %></h2>
+        <div class="meta"><span class="ico">📅</span><span><%= fmtDateTime(e.starts_at) %></span></div>
+      </div>
+      <span class="tag tag-<%= e.status %>"><%= e.status %></span>
+    </div>
+    <div class="stats" style="margin-top:10px">
+      <span class="stat"><b><%= e.stats.yes %></b> yes</span>
+      <span class="stat"><b><%= e.stats.maybe %></b> maybe</span>
+      <span class="stat"><b><%= e.stats.no %></b> no</span>
+      <span class="stat muted"><%= e.stats.pending %> no reply</span>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <a class="btn btn-sm" href="/organizer/events/<%= e.id %>">Manage &amp; links</a>
+    </div>
+  </div>
+<% }) %>
+
+<%- include('../partials/foot') %>

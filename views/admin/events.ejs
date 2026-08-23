@@ -1,0 +1,41 @@
+<%- include('../partials/head', { title: 'All events', wide: true }) %>
+<%- include('../partials/appnav') %>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+  <h1 style="margin:0">All events</h1>
+  <a class="btn" href="/admin">← Admin</a>
+</div>
+
+<% if (!events.length) { %>
+  <div class="card"><p class="muted">No events yet.</p></div>
+<% } else { %>
+<div class="card">
+  <table class="table">
+    <thead><tr><th>Event</th><th>Organiser</th><th>When</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      <% events.forEach(function (e) { %>
+      <tr>
+        <td><%= e.title %></td>
+        <td class="muted small"><%= e.organizer_email %></td>
+        <td class="small"><%= fmtDate(e.starts_at) %></td>
+        <td><span class="tag tag-<%= e.status %>"><%= e.status %></span></td>
+        <td style="white-space:nowrap">
+          <% if (e.status !== 'closed' && e.status !== 'cancelled') { %>
+          <form class="inline-form" method="post" action="/admin/events/<%= e.id %>/close">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn-sm">Close</button>
+          </form>
+          <% } %>
+          <form class="inline-form" method="post" action="/admin/events/<%= e.id %>/delete" data-confirm="Permanently delete this event and all its guests?">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn-sm btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+
+<%- include('../partials/foot') %>

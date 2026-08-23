@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets — NEVER commit these
+.env
+.env.*
+!.env.example
+
+# Database (contains guest PII — never commit)
+data.db
+data.db-*
+*.sqlite
+*.sqlite3
+
+# Backups
+*.bak
+backups/
+
+# Build artifacts
+public/app.css
+
+# Logs
+*.log
+logs/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

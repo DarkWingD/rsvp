@@ -1,0 +1,41 @@
+<%- include('../partials/head', { title: 'Admin' }) %>
+<%- include('../partials/appnav') %>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+  <h1 style="margin:0">Admin</h1>
+  <a class="btn" href="/admin/events">All events</a>
+</div>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px">
+    <div><strong>New signups:</strong> <%= paused ? 'Paused ⛔' : 'Open ✅' %></div>
+    <form method="post" action="/admin/killswitch">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-sm"><%= paused ? 'Resume signups' : 'Pause signups' %></button>
+    </form>
+  </div>
+</div>
+
+<h2>Pending requests (<%= pending.length %>)</h2>
+<% if (!pending.length) { %>
+  <div class="card"><p class="muted">No pending requests right now.</p></div>
+<% } %>
+
+<% pending.forEach(function (o) { %>
+  <div class="card">
+    <div><strong><%= o.email %></strong><% if (o.display_name) { %> — <%= o.display_name %><% } %></div>
+    <div class="muted small">requested <%= o.created_at %></div>
+    <div class="btn-row" style="margin-top:10px">
+      <form class="inline-form" method="post" action="/admin/organizers/<%= o.id %>/approve">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-sm btn-primary">Approve</button>
+      </form>
+      <form class="inline-form" method="post" action="/admin/organizers/<%= o.id %>/reject" data-confirm="Reject this request? (No email is sent.)">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-sm btn-danger">Reject</button>
+      </form>
+    </div>
+  </div>
+<% }) %>
+
+<%- include('../partials/foot') %>
