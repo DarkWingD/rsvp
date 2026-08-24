@@ -1,0 +1,9 @@
+[Unit]
+Description=RSVP - run nightly purge of expired events
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

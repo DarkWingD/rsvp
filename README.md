@@ -115,6 +115,16 @@ All configuration is via environment variables in `.env` (copied from `.env.exam
 
 ## Production setup (Fedora + Cloudflare)
 
+**Fast path:** a provisioning script does steps 1–2 and the systemd wiring for you:
+
+```bash
+sudo bash deploy/setup.sh
+# then edit /opt/rsvp/app/.env and:  sudo systemctl enable --now rsvp
+```
+It installs Node + build tools, creates the `rsvp` user, clones/updates the repo, builds CSS,
+creates `.env` from the template, and enables the app + nightly purge/backup timers. You still
+do the interactive Cloudflare steps below (tunnel login, Access app). The manual equivalent:
+
 Placeholders below (`rsvp.example.com`, `admin@example.com`) — substitute your own.
 
 1. **Install & place the app**

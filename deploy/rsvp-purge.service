@@ -1,0 +1,8 @@
+[Unit]
+Description=RSVP - purge expired events
+
+[Service]
+Type=oneshot
+User=rsvp
+WorkingDirectory=/opt/rsvp/app
+ExecStart=/usr/bin/node src/purge.js

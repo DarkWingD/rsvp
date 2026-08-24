@@ -1,0 +1,8 @@
+[Unit]
+Description=RSVP - database backup
+
+[Service]
+Type=oneshot
+User=rsvp
+WorkingDirectory=/opt/rsvp/app
+ExecStart=/bin/bash /opt/rsvp/app/deploy/backup.sh
