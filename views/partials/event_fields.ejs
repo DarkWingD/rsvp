@@ -43,6 +43,20 @@
     <option value="warm" <%= values.theme === 'warm' ? 'selected' : '' %>>Warm &amp; friendly</option>
     <option value="elegant" <%= values.theme === 'elegant' ? 'selected' : '' %>>Elegant invitation</option>
   </select>
+  <div class="hint">Preview updates as you choose — this is roughly what your guests will see.</div>
+  <div id="theme-preview" class="theme-preview theme-<%= values.theme || 'modern' %>">
+    <div class="tp-card">
+      <div class="tp-eyebrow">You're invited</div>
+      <div class="tp-title" id="tp-title"><%= values.title || 'Your event title' %></div>
+      <div class="tp-meta">📅 Sat 12 Oct · 3:00pm</div>
+      <div class="tp-meta" id="tp-loc">📍 <%= values.location || 'Location' %></div>
+      <div class="tp-options">
+        <span class="tp-btn tp-yes">Yes, I'll be there</span>
+        <span class="tp-btn">Maybe</span>
+        <span class="tp-btn">Can't make it</span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="checkbox">

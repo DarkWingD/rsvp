@@ -3,43 +3,79 @@
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────────────────────
-   RSVP styles. Themes are driven by CSS variables set on <body>
-   (.theme-app / .theme-modern / .theme-warm / .theme-elegant).
-   Light/dark follows the device via prefers-color-scheme.
+   RSVP styles.
+   - Light/dark: auto (prefers-color-scheme) by default; a manual
+     override is applied by app.js via <html data-mode="light|dark">.
+   - Themes: .theme-app / .theme-modern / .theme-warm / .theme-elegant
+     on <body> change accent, shape, typography and a subtle tint.
    ───────────────────────────────────────────────────────────── */
 
 :root {
-  --bg: #f5f6f8;
-  --card: #ffffff;
+  /* base palette (light) */
+  --bg-base: #f4f5f7;
+  --card-base: #ffffff;
   --fg: #1a1d24;
   --muted: #667085;
   --border: #e3e6ea;
+  /* semantic */
   --accent: #2563eb;
   --accent-fg: #ffffff;
   --danger: #c0392b;
   --ok: #1a7f4b;
+  /* shape + type */
   --radius: 14px;
+  --btn-radius: 10px;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --heading-font: var(--font);
+  /* derived (themes may re-tint these) */
+  --bg: var(--bg-base);
+  --card: var(--card-base);
 }
 
+/* dark values, shared by auto-dark and forced-dark */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14161a;
-    --card: #1e2127;
+  :root:not([data-mode="light"]) {
+    --bg-base: #14161a;
+    --card-base: #1e2127;
     --fg: #e8eaed;
     --muted: #9aa1ac;
     --border: #2c313a;
   }
 }
+:root[data-mode="dark"] {
+  --bg-base: #14161a;
+  --card-base: #1e2127;
+  --fg: #e8eaed;
+  --muted: #9aa1ac;
+  --border: #2c313a;
+}
 
-/* Theme presets — mostly accent / shape / typography */
-.theme-app     { --accent: #2563eb; }
-.theme-modern  { --accent: #2563eb; --radius: 14px; }
-.theme-warm    { --accent: #e07a5f; --radius: 22px;
-                 --font: "Segoe UI", system-ui, "Trebuchet MS", sans-serif; }
-.theme-elegant { --accent: #9c7a3c; --radius: 8px;
-                 --heading-font: Georgia, "Times New Roman", serif; }
+/* ── Theme presets ───────────────────────────────────────────── */
+.theme-app,
+.theme-modern {
+  --accent: #2563eb;
+  --radius: 12px;
+  --btn-radius: 9px;
+}
+
+.theme-warm {
+  --accent: #e0684a;
+  --radius: 24px;
+  --btn-radius: 999px;
+  --font: "Segoe UI", system-ui, "Trebuchet MS", Verdana, sans-serif;
+  --heading-font: var(--font);
+  --bg: color-mix(in srgb, var(--accent) 6%, var(--bg-base));
+  --card: color-mix(in srgb, var(--accent) 8%, var(--card-base));
+}
+
+.theme-elegant {
+  --accent: #9c7a3c;
+  --radius: 4px;
+  --btn-radius: 2px;
+  --font: Georgia, Cambria, "Times New Roman", serif;
+  --heading-font: Georgia, Cambria, "Times New Roman", serif;
+  --bg: color-mix(in srgb, var(--accent) 4%, var(--bg-base));
+}
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -75,14 +111,26 @@ a { color: var(--accent); }
 .brand a { text-decoration: none; color: var(--fg); font-weight: 700; }
 .nav { display: flex; gap: 14px; font-size: .95rem; }
 
-.meta { color: var(--muted); font-size: .95rem; margin: 2px 0; display: flex; gap: 6px; }
-.meta .ico { opacity: .8; }
+.meta { color: var(--muted); font-size: .95rem; margin: 2px 0; display: flex; gap: 6px; align-items: baseline; }
+.meta .ico { opacity: .85; }
+.meta a { word-break: break-word; }
+
+/* Colour-scheme toggle (top-right, on every page) */
+.theme-toggle {
+  position: fixed; top: 10px; right: 10px; z-index: 60;
+  font: inherit; font-size: .8rem; line-height: 1;
+  padding: 7px 11px; cursor: pointer;
+  color: var(--fg); background: var(--card);
+  border: 1px solid var(--border); border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.theme-toggle:hover { border-color: var(--accent); }
 
 /* Buttons */
 .btn {
   display: inline-block; cursor: pointer; text-align: center; text-decoration: none;
   border: 1px solid var(--border); background: var(--card); color: var(--fg);
-  padding: 11px 16px; border-radius: calc(var(--radius) - 4px); font-size: 1rem;
+  padding: 11px 16px; border-radius: var(--btn-radius); font-size: 1rem;
   font-family: inherit; line-height: 1.2;
 }
 .btn:hover { border-color: var(--accent); }
@@ -100,8 +148,8 @@ a { color: var(--accent); }
 input[type=text], input[type=date], input[type=time], input[type=number],
 input[type=email], select, textarea {
   width: 100%; padding: 11px 12px; font-size: 1rem; font-family: inherit;
-  color: var(--fg); background: var(--bg);
-  border: 1px solid var(--border); border-radius: calc(var(--radius) - 6px);
+  color: var(--fg); background: var(--bg-base);
+  border: 1px solid var(--border); border-radius: calc(var(--btn-radius) + 2px);
 }
 textarea { min-height: 72px; resize: vertical; }
 .checkbox { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
@@ -120,7 +168,7 @@ textarea { min-height: 72px; resize: vertical; }
 .rsvp-options { display: grid; gap: 10px; margin: 8px 0 6px; }
 .rsvp-choice {
   display: block; position: relative; cursor: pointer;
-  border: 1.5px solid var(--border); border-radius: calc(var(--radius) - 2px);
+  border: 1.5px solid var(--border); border-radius: var(--btn-radius);
   padding: 15px 16px; font-size: 1.05rem; font-weight: 600; text-align: center; background: var(--card);
 }
 .rsvp-choice input { position: absolute; opacity: 0; }
@@ -147,10 +195,61 @@ textarea { min-height: 72px; resize: vertical; }
 .filters a { text-decoration: none; }
 .filters a.active { font-weight: 700; }
 
-.linkbox { display: flex; gap: 6px; align-items: center; }
-.linkbox input { font-size: .8rem; }
 .inline-form { display: inline; }
 
-/* Elegant theme centering for guest page */
+/* ── Per-theme page backgrounds ──────────────────────────────── */
+body.theme-warm {
+  background:
+    radial-gradient(1100px 380px at 50% -12%, color-mix(in srgb, var(--accent) 15%, transparent), transparent),
+    var(--bg-base);
+}
+body.theme-elegant {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, var(--bg-base)), var(--bg-base) 320px);
+}
+
+/* ── Modern: crisp + techy ───────────────────────────────────── */
+.theme-modern .card { box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.theme-modern .btn-primary { letter-spacing: .01em; }
+
+/* ── Warm: rounded + friendly ────────────────────────────────── */
+.theme-warm h1 { letter-spacing: -.01em; }
+.theme-warm .card {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+}
+.theme-warm .rsvp-choice { padding: 17px 16px; }
+.theme-warm .btn { font-weight: 600; }
+
+/* ── Elegant: serif invitation ───────────────────────────────── */
 .theme-elegant .guest-head { text-align: center; }
-.theme-elegant .guest-head .eyebrow { letter-spacing: .18em; text-transform: uppercase; font-size: .72rem; color: var(--muted); }
+.theme-elegant .guest-head .eyebrow {
+  letter-spacing: .28em; text-transform: uppercase; font-size: .68rem;
+  color: var(--accent); margin-bottom: 8px;
+}
+.theme-elegant .guest-head h1 { font-size: 2.1rem; font-weight: 500; letter-spacing: .01em; }
+.theme-elegant .guest-head::after { content: ""; display: block; width: 48px; height: 1px; background: var(--accent); margin: 14px auto 2px; }
+.theme-elegant .card { box-shadow: none; }
+.theme-elegant .rsvp-options { max-width: 340px; margin-inline: auto; }
+.theme-elegant .rsvp-choice { font-weight: 500; letter-spacing: .08em; text-transform: uppercase; font-size: .92rem; }
+.theme-elegant .btn-primary { text-transform: uppercase; letter-spacing: .12em; font-size: .9rem; font-weight: 500; }
+
+/* ── Live theme preview (on the create/edit form) ────────────── */
+.theme-preview { margin-top: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+body.theme-app .theme-preview.theme-warm { background: radial-gradient(600px 200px at 50% -25%, color-mix(in srgb, var(--accent) 16%, transparent), var(--bg-base)); }
+body.theme-app .theme-preview.theme-elegant { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, var(--bg-base)), var(--bg-base)); }
+.tp-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; font-family: var(--font); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+.theme-preview.theme-warm .tp-card { box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 14%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+.theme-preview.theme-elegant .tp-card { box-shadow: none; text-align: center; }
+.tp-eyebrow { letter-spacing: .26em; text-transform: uppercase; font-size: .6rem; color: var(--accent); margin-bottom: 6px; }
+.theme-preview:not(.theme-elegant) .tp-eyebrow { display: none; }
+.tp-title { font-family: var(--heading-font); font-size: 1.15rem; font-weight: 600; margin-bottom: 4px; }
+.theme-preview.theme-elegant .tp-title { font-weight: 500; letter-spacing: .01em; font-size: 1.3rem; }
+.tp-meta { color: var(--muted); font-size: .78rem; margin: 2px 0; word-break: break-word; }
+.tp-options { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.theme-preview.theme-elegant .tp-options { justify-content: center; }
+.tp-btn { font-size: .78rem; padding: 7px 12px; border: 1.5px solid var(--border); border-radius: var(--btn-radius); background: var(--card); color: var(--fg); }
+.theme-preview.theme-elegant .tp-btn { text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; }
+.tp-btn.tp-yes { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }

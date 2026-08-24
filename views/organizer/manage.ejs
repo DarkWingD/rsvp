@@ -7,7 +7,7 @@
   <span class="tag tag-<%= event.status %>"><%= event.status %></span>
 </div>
 <div class="meta"><span class="ico">📅</span><span><%= fmtDateTime(event.starts_at) %><% if (event.ends_at) { %> – <%= fmtTime(event.ends_at) %><% } %></span></div>
-<% if (event.location) { %><div class="meta"><span class="ico">📍</span><span><%= event.location %></span></div><% } %>
+<% if (event.location) { %><div class="meta"><span class="ico">📍</span><% if (isUrl(event.location)) { %><a href="<%= event.location %>" target="_blank" rel="noopener noreferrer"><%= mapLabel(event.location) %> ↗</a><% } else { %><span><%= event.location %></span><% } %></div><% } %>
 
 <% if (event.status === 'cancelled') { %>
   <div class="banner banner-error" style="margin-top:12px">This event is cancelled. Guests see a cancelled notice on their links.</div>

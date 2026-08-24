@@ -19,7 +19,13 @@
       <span><%= fmtDateTime(event.starts_at) %><% if (event.ends_at) { %> – <%= fmtTime(event.ends_at) %><% } %></span>
     </div>
     <% if (event.location) { %>
-    <div class="meta"><span class="ico">📍</span><span><%= event.location %></span></div>
+    <div class="meta"><span class="ico">📍</span>
+      <% if (isUrl(event.location)) { %>
+        <a href="<%= event.location %>" target="_blank" rel="noopener noreferrer"><%= mapLabel(event.location) %> ↗</a>
+      <% } else { %>
+        <span><%= event.location %></span>
+      <% } %>
+    </div>
     <% } %>
     <% if (event.description) { %>
     <p style="margin-top:10px; white-space:pre-line"><%= event.description %></p>

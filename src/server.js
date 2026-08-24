@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 
 const config = require('./config');
 const { formatDateTime, formatDate, formatTimeOnly } = require('./time');
+const { isHttpUrl, mapLabel } = require('./location');
 require('./db'); // initialise schema on startup
 const { runPurge } = require('./purge');
 
@@ -72,6 +73,8 @@ app.use((req, res, next) => {
   res.locals.fmtDateTime = formatDateTime;
   res.locals.fmtDate = formatDate;
   res.locals.fmtTime = formatTimeOnly;
+  res.locals.isUrl = isHttpUrl;
+  res.locals.mapLabel = mapLabel;
   res.locals.baseUrl = config.baseUrl;
   res.locals.appTz = config.tz;
   res.locals.turnstileSiteKey = config.turnstile.siteKey;
