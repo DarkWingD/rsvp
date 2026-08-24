@@ -6,6 +6,7 @@ const m = require('../models');
 const config = require('../config');
 const { parseRsvpForm } = require('../validate');
 const { buildIcs, isPastDate, isPastLocal } = require('../time');
+const { sendGuestConfirmation } = require('../mail');
 
 // In-memory throttle: token -> array of edit timestamps (last hour).
 const editHits = new Map();
@@ -69,6 +70,15 @@ router.post('/:token', loadGuest, (req, res) => {
   }
 
   m.updateGuestRsvp(req.guest.id, data);
+
+  // Email confirmation for email-mode events (once, on a Yes/Maybe).
+  if (req.event.notify_method === 'email' && req.guest.email && data.rsvp !== 'no' && !req.guest.confirmed_notified_at) {
+    const g = Object.assign({}, req.guest, data);
+    sendGuestConfirmation(req.event, g)
+      .then((r) => { if (r && r.ok) m.markConfirmationSent(req.guest.id); })
+      .catch((e) => console.error('[confirm]', e.message));
+  }
+
   res.redirect(`/r/${req.params.token}?saved=1`);
 });
 

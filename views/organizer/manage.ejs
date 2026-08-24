@@ -15,6 +15,11 @@
   <div class="banner banner-info" style="margin-top:12px">Awaiting approval — guest links won't work until the site owner approves you.</div>
 <% } %>
 
+<% if (typeof error !== 'undefined' && error) { %><div class="banner banner-error" style="margin-top:12px"><%= error %></div><% } %>
+<% if (typeof msg !== 'undefined' && msg) { %><div class="banner banner-success" style="margin-top:12px"><%= msg %></div><% } %>
+<% if (event.notify_method === 'email' && emailCapped) { %><div class="banner banner-error" style="margin-top:12px">⚠ The free email limit has been reached this month. Email invites &amp; reminders are paused until it resets.</div><% } %>
+<% if (event.notify_method === 'email' && !mailEnabled) { %><div class="banner banner-info" style="margin-top:12px">Email isn't configured on the server, so invites won't send. You can still share guest links manually.</div><% } %>
+
 <div class="btn-row" style="margin:14px 0">
   <a class="btn btn-sm" href="/organiser/events/<%= event.id %>/edit">Edit</a>
   <a class="btn btn-sm" href="/organiser/events/<%= event.id %>/export.csv">Export CSV</a>
@@ -38,16 +43,45 @@
 
 <div class="card">
   <h2>Add guests</h2>
-  <form method="post" action="/organiser/events/<%= event.id %>/guests">
-    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-    <div class="field">
-      <label for="names">One name per line</label>
-      <textarea id="names" name="names" placeholder="Sarah&#10;Tom&#10;Priya"></textarea>
-      <div class="hint">Each guest gets their own private link. Max <%= caps.guestsPerEvent %> guests per event.</div>
-    </div>
-    <button class="btn btn-primary" type="submit">Add guests</button>
-  </form>
+  <% if (event.notify_method === 'email') { %>
+    <form method="post" action="/organiser/events/<%= event.id %>/guests">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="row2">
+        <div class="field"><label for="guest_name">Name</label><input type="text" id="guest_name" name="guest_name" maxlength="120" required></div>
+        <div class="field"><label for="guest_email">Email</label><input type="email" id="guest_email" name="guest_email" maxlength="200" required></div>
+      </div>
+      <button class="btn btn-primary" type="submit">Add guest</button>
+      <div class="hint" style="margin-top:6px">Add guests one at a time, then use “Send invites” below. Max <%= caps.guestsPerEvent %> per event.</div>
+    </form>
+  <% } else { %>
+    <form method="post" action="/organiser/events/<%= event.id %>/guests">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field">
+        <label for="names">One name per line</label>
+        <textarea id="names" name="names" placeholder="Sarah&#10;Tom&#10;Priya"></textarea>
+        <div class="hint">Each guest gets their own private link. Max <%= caps.guestsPerEvent %> guests per event.</div>
+      </div>
+      <button class="btn btn-primary" type="submit">Add guests</button>
+    </form>
+  <% } %>
 </div>
+
+<% if (event.notify_method === 'email') { %>
+<div class="card">
+  <h2>Email invites</h2>
+  <p class="muted small">Invites go to guests you haven't emailed yet; reminders go to those who haven't replied.</p>
+  <div class="btn-row">
+    <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/invites/send" data-confirm="Send invites to <%= notInvitedCount %> guest(s)?">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-primary btn-sm" <%= (notInvitedCount && !emailCapped) ? '' : 'disabled' %>>Send invites (<%= notInvitedCount %>)</button>
+    </form>
+    <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/reminders/send" data-confirm="Send a reminder to <%= nonResponderCount %> guest(s)?">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-sm" <%= (nonResponderCount && !emailCapped) ? '' : 'disabled' %>>Remind non-responders (<%= nonResponderCount %>)</button>
+    </form>
+  </div>
+</div>
+<% } %>
 
 <div class="card">
   <h2>Guests (<%= allCount %>)</h2>
@@ -66,7 +100,7 @@
 <% }) %></textarea>
 
     <table class="table">
-      <thead><tr><th>Name</th><th>RSVP</th><th>Link</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>RSVP</th><% if (event.notify_method === 'email') { %><th>Email</th><th>Invited</th><% } %><th>Link</th><th></th></tr></thead>
       <tbody>
         <% guests.forEach(function (g) { %>
         <tr>
@@ -76,6 +110,10 @@
             <% if (g.notes) { %><br><span class="muted small">💬 <%= g.notes %></span><% } %>
           </td>
           <td><span class="tag tag-<%= g.rsvp %>"><%= g.rsvp === 'pending' ? 'no reply' : g.rsvp %></span></td>
+          <% if (event.notify_method === 'email') { %>
+          <td class="small muted"><%= g.email || '—' %></td>
+          <td class="small"><%= g.invited_at ? '✓' : '—' %></td>
+          <% } %>
           <td><button class="btn btn-sm" data-copy="<%= guestUrl(g) %>">Copy</button></td>
           <td style="white-space:nowrap">
             <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/guests/<%= g.id %>/regenerate" data-confirm="Make a new link? The old link will stop working.">

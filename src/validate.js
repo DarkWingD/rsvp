@@ -4,6 +4,7 @@ const { themes } = require('./config');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function cleanStr(v, max) {
   return String(v == null ? '' : v).trim().slice(0, max);
@@ -41,6 +42,8 @@ function parseEventForm(body) {
   const ask_dietary = has_food && checked(body.ask_dietary);
   const guests_see_each_other = checked(body.guests_see_each_other);
 
+  const notify_method = body.notify_method === 'email' ? 'email' : 'direct_link';
+
   return {
     errors,
     data: {
@@ -48,9 +51,20 @@ function parseEventForm(body) {
       description: cleanStr(body.description, 4000) || null,
       location: cleanStr(body.location, 300) || null,
       starts_at, ends_at, rsvp_deadline, theme,
-      has_food, ask_dietary, guests_see_each_other,
+      has_food, ask_dietary, guests_see_each_other, notify_method,
     },
   };
+}
+
+// Parse a single guest (name + email) from the email-mode add form.
+function parseGuestOne(body, requireEmail) {
+  const errors = [];
+  const label = cleanStr(body.guest_name, 120);
+  const email = cleanStr(body.guest_email, 200).toLowerCase();
+  if (!label) errors.push('Name is required.');
+  if (requireEmail && !email) errors.push('Email is required for email invites.');
+  if (email && !EMAIL_RE.test(email)) errors.push('That email doesn’t look valid.');
+  return { errors, data: { label, email: email || null } };
 }
 
 function parseGuestNames(raw, max) {
@@ -74,4 +88,4 @@ function parseRsvpForm(body, askDietary) {
   return { errors, data: { rsvp, party_size, dietary, notes } };
 }
 
-module.exports = { cleanStr, checked, parseEventForm, parseGuestNames, parseRsvpForm };
+module.exports = { cleanStr, checked, parseEventForm, parseGuestNames, parseGuestOne, parseRsvpForm };

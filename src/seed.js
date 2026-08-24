@@ -27,7 +27,7 @@ const event = createEvent({
   guests_see_each_other: false,
 }, org);
 
-addGuests(event.id, ['Sarah', 'Tom', 'Priya']);
+addGuests(event.id, [{ label: 'Sarah' }, { label: 'Tom' }, { label: 'Priya' }]);
 const guests = listGuests(event.id);
 
 console.log('\nSeeded demo event:', event.title, `(id ${event.id}, status ${event.status})`);

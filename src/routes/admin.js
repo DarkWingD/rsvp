@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAdmin } = require('../auth');
 const m = require('../models');
-const { signupsPaused, setSetting } = require('../db');
+const { signupsPaused, setSetting, emailBlocked, clearEmailBlock } = require('../db');
 const { notifyRequesterApproved } = require('../mail');
 
 router.use(requireAdmin());
@@ -14,7 +14,14 @@ router.get('/', (req, res) => {
     title: 'Admin',
     pending: m.listPendingOrganizers(),
     paused: signupsPaused(),
+    emailCapped: emailBlocked(),
   });
+});
+
+// Manually clear the monthly email block (e.g. after upgrading the Resend plan).
+router.post('/email/clear', (req, res) => {
+  clearEmailBlock();
+  res.redirect('/admin');
 });
 
 // Approve a first-time organiser → their pending events go live; email them their link.

@@ -59,6 +59,18 @@
   </div>
 </div>
 
+<div class="field">
+  <label>How will guests be notified?</label>
+  <div class="checkbox">
+    <input type="radio" id="nm_direct" name="notify_method" value="direct_link" <%= (values.notify_method || 'direct_link') !== 'email' ? 'checked' : '' %>>
+    <label for="nm_direct">I'll share each guest's link myself (no emails collected)</label>
+  </div>
+  <div class="checkbox">
+    <input type="radio" id="nm_email" name="notify_method" value="email" <%= values.notify_method === 'email' ? 'checked' : '' %>>
+    <label for="nm_email">Email guests their invite (you'll add each guest's name &amp; email)</label>
+  </div>
+</div>
+
 <div class="checkbox">
   <input type="checkbox" id="has_food" name="has_food" <%= values.has_food ? 'checked' : '' %>>
   <label for="has_food">This event has food</label>

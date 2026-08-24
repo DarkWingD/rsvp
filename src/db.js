@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS events (
   has_food               INTEGER NOT NULL DEFAULT 0,
   ask_dietary            INTEGER NOT NULL DEFAULT 0,
   guests_see_each_other  INTEGER NOT NULL DEFAULT 0,
+  notify_method          TEXT NOT NULL DEFAULT 'direct_link',  -- direct_link | email
   status                 TEXT NOT NULL DEFAULT 'pending',  -- pending | live | cancelled | closed
   created_at             TEXT NOT NULL,
   approved_at            TEXT,
@@ -41,12 +42,16 @@ CREATE TABLE IF NOT EXISTS guests (
   id            INTEGER PRIMARY KEY,
   event_id      INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   label         TEXT NOT NULL,
+  email         TEXT,
   token         TEXT UNIQUE NOT NULL,
   rsvp          TEXT NOT NULL DEFAULT 'pending',   -- pending | yes | no | maybe
   party_size    INTEGER NOT NULL DEFAULT 1,
   dietary       TEXT,
   notes         TEXT,
   responded_at  TEXT,
+  invited_at    TEXT,
+  reminded_at   TEXT,
+  confirmed_notified_at TEXT,
   created_at    TEXT NOT NULL
 );
 
@@ -58,6 +63,17 @@ CREATE TABLE IF NOT EXISTS app_settings (
 CREATE INDEX IF NOT EXISTS idx_events_org    ON events(organizer_id);
 CREATE INDEX IF NOT EXISTS idx_guests_event  ON guests(event_id);
 `);
+
+// Lightweight migrations: add columns to pre-existing databases if missing.
+function ensureColumn(table, name, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+  if (!cols.includes(name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
+}
+ensureColumn('events', 'notify_method', "notify_method TEXT NOT NULL DEFAULT 'direct_link'");
+ensureColumn('guests', 'email', 'email TEXT');
+ensureColumn('guests', 'invited_at', 'invited_at TEXT');
+ensureColumn('guests', 'reminded_at', 'reminded_at TEXT');
+ensureColumn('guests', 'confirmed_notified_at', 'confirmed_notified_at TEXT');
 
 // --- small settings helpers ---
 const _getSetting = db.prepare('SELECT value FROM app_settings WHERE key = ?');
@@ -75,4 +91,24 @@ function signupsPaused() {
   return getSetting('signups_paused', '0') === '1';
 }
 
-module.exports = { db, getSetting, setSetting, signupsPaused };
+// Email quota block (monthly). We can't count usage locally because the Resend account
+// is shared across projects, so we react to Resend's "limit reached" error and block for
+// the current month; it auto-clears when the calendar month rolls over.
+function currentMonth() {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+function emailBlocked() {
+  return getSetting('email_blocked_month', '') === currentMonth();
+}
+function blockEmailThisMonth() {
+  setSetting('email_blocked_month', currentMonth());
+}
+function clearEmailBlock() {
+  setSetting('email_blocked_month', '');
+}
+
+module.exports = {
+  db, getSetting, setSetting, signupsPaused,
+  emailBlocked, blockEmailThisMonth, clearEmailBlock, currentMonth,
+};
