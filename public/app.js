@@ -94,10 +94,39 @@ document.addEventListener('click', function (e) {
   }
 });
 
-// Confirm dialogs for destructive forms: <form data-confirm="Are you sure?">.
+// In-app confirmation modal for destructive forms: <form data-confirm="Are you sure?">.
+function showConfirm(message, onOk) {
+  var overlay = document.getElementById('confirm-modal');
+  if (!overlay) { if (window.confirm(message)) onOk(); return; } // fallback if modal absent
+  document.getElementById('confirm-text').textContent = message;
+  var ok = document.getElementById('confirm-ok');
+  var cancel = document.getElementById('confirm-cancel');
+  overlay.hidden = false;
+
+  function cleanup() {
+    overlay.hidden = true;
+    ok.removeEventListener('click', onOkClick);
+    cancel.removeEventListener('click', cleanup);
+    overlay.removeEventListener('click', onBackdrop);
+    document.removeEventListener('keydown', onKey);
+  }
+  function onOkClick() { cleanup(); onOk(); }
+  function onBackdrop(ev) { if (ev.target === overlay) cleanup(); }
+  function onKey(ev) {
+    if (ev.key === 'Escape') cleanup();
+    else if (ev.key === 'Enter') { cleanup(); onOk(); }
+  }
+  ok.addEventListener('click', onOkClick);
+  cancel.addEventListener('click', cleanup);
+  overlay.addEventListener('click', onBackdrop);
+  document.addEventListener('keydown', onKey);
+  ok.focus();
+}
+
 document.addEventListener('submit', function (e) {
   var form = e.target;
-  if (form.matches && form.matches('[data-confirm]')) {
-    if (!window.confirm(form.getAttribute('data-confirm'))) e.preventDefault();
-  }
+  if (!(form.matches && form.matches('[data-confirm]'))) return;
+  e.preventDefault();
+  // form.submit() bypasses this handler, so no re-prompt loop.
+  showConfirm(form.getAttribute('data-confirm'), function () { form.submit(); });
 });

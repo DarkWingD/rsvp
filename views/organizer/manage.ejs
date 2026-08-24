@@ -15,8 +15,6 @@
   <div class="banner banner-info" style="margin-top:12px">Awaiting approval — guest links won't work until the site owner approves you.</div>
 <% } %>
 
-<% if (typeof error !== 'undefined' && error) { %><div class="banner banner-error" style="margin-top:12px"><%= error %></div><% } %>
-<% if (typeof msg !== 'undefined' && msg) { %><div class="banner banner-success" style="margin-top:12px"><%= msg %></div><% } %>
 <% if (event.notify_method === 'email' && emailCapped) { %><div class="banner banner-error" style="margin-top:12px">⚠ The free email limit has been reached this month. Email invites &amp; reminders are paused until it resets.</div><% } %>
 <% if (event.notify_method === 'email' && !mailEnabled) { %><div class="banner banner-info" style="margin-top:12px">Email isn't configured on the server, so invites won't send. You can still share guest links manually.</div><% } %>
 
@@ -65,6 +63,9 @@
     </form>
   <% } %>
 </div>
+
+<% if (typeof msg !== 'undefined' && msg) { %><div class="banner banner-success"><%= msg %></div><% } %>
+<% if (typeof error !== 'undefined' && error) { %><div class="banner banner-error"><%= error %></div><% } %>
 
 <% if (event.notify_method === 'email') { %>
 <div class="card">
