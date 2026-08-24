@@ -12,6 +12,9 @@ const { isHttpUrl, mapLabel } = require('./location');
 require('./db'); // initialise schema on startup
 const { runPurge } = require('./purge');
 
+// Changes every restart/deploy → appended to asset URLs to bust browser + Cloudflare caches.
+const ASSET_VERSION = Date.now().toString(36);
+
 const app = express();
 app.set('trust proxy', true); // behind Cloudflare Tunnel
 app.set('view engine', 'ejs');
@@ -80,6 +83,7 @@ app.use((req, res, next) => {
   res.locals.appTz = config.tz;
   res.locals.turnstileSiteKey = config.turnstile.siteKey;
   res.locals.currentPath = req.path;
+  res.locals.assetVer = ASSET_VERSION;
   next();
 });
 
