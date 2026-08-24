@@ -29,6 +29,7 @@ app.use(helmet({
       connectSrc: ["'self'", 'https://challenges.cloudflare.com'],
       baseUri: ["'self'"],
       formAction: ["'self'"],
+      frameAncestors: ["'self'"],
     },
   },
 }));
@@ -102,6 +103,13 @@ app.use((err, req, res, next) => {
 // In-process safety-net purge (in addition to the nightly systemd timer).
 try { runPurge(); } catch (e) { console.error('[purge:startup]', e.message); }
 setInterval(() => { try { runPurge(); } catch (e) { console.error('[purge:interval]', e.message); } }, 6 * 3600 * 1000);
+
+// Safety: never allow the auth bypass to run alongside a real Cloudflare Access config
+// (that would silently disable authentication in production).
+if (config.devBypassAuth && config.cf.teamDomain) {
+  console.error('FATAL: DEV_BYPASS_AUTH=true while Cloudflare Access is configured. Refusing to start — set DEV_BYPASS_AUTH=false in production.');
+  process.exit(1);
+}
 
 app.listen(config.port, '127.0.0.1', () => {
   console.log(`RSVP listening on http://127.0.0.1:${config.port}  (public: ${config.baseUrl})`);

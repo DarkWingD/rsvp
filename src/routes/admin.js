@@ -49,7 +49,7 @@ router.post('/organisers/:id/revoke', (req, res) => {
     m.setOrganizerStatus(org.id, 'revoked');
     m.closeEventsForOrganizer(org.id);
   }
-  res.redirect(req.get('referer') || '/admin/events');
+  res.redirect('/admin/events');
 });
 
 router.get('/events', (req, res) => {
