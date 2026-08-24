@@ -161,12 +161,13 @@ router.post('/events/:id/guests', loadOwnedEvent, (req, res) => {
     const { errors, data } = parseGuestOne(req.body, true);
     if (errors.length) return res.redirect(back(req, '?err=' + encodeURIComponent(errors.join(' '))));
     m.addGuests(req.event.id, [{ label: data.label, email: data.email }]);
-  } else {
-    const names = parseGuestNames(req.body.names, config.caps.guestsPerRequest);
-    const toAdd = names.slice(0, Math.max(0, room)).map((n) => ({ label: n, email: null }));
-    if (toAdd.length) m.addGuests(req.event.id, toAdd);
+    return res.redirect(back(req, '?msg=' + encodeURIComponent(`Added ${data.label} (${data.email})`)));
   }
-  res.redirect(back(req));
+  const names = parseGuestNames(req.body.names, config.caps.guestsPerRequest);
+  const toAdd = names.slice(0, Math.max(0, room)).map((n) => ({ label: n, email: null }));
+  if (toAdd.length) m.addGuests(req.event.id, toAdd);
+  const n = toAdd.length;
+  res.redirect(back(req, n ? '?msg=' + encodeURIComponent(`Added ${n} guest${n > 1 ? 's' : ''}`) : ''));
 });
 
 // Send invites to guests who have an email and haven't been invited yet.
@@ -217,6 +218,36 @@ router.post('/events/:id/guests/:gid/delete', loadOwnedEvent, (req, res) => {
   const g = m.getGuest(parseInt(req.params.gid, 10));
   if (g && g.event_id === req.event.id) m.deleteGuest(g.id);
   res.redirect(`/organiser/events/${req.event.id}`);
+});
+
+// Edit a single guest's email address.
+router.post('/events/:id/guests/:gid/email', loadOwnedEvent, (req, res) => {
+  const g = m.getGuest(parseInt(req.params.gid, 10));
+  if (!g || g.event_id !== req.event.id) return res.redirect(back(req));
+  const email = (req.body.email || '').trim().toLowerCase().slice(0, 200);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.redirect(back(req, '?err=' + encodeURIComponent('That email doesn’t look valid.')));
+  }
+  m.updateGuestEmail(g.id, email || null);
+  res.redirect(back(req, '?msg=' + encodeURIComponent(`Updated ${g.label}'s email`)));
+});
+
+// Send/resend the invite to a single guest.
+router.post('/events/:id/guests/:gid/invite', loadOwnedEvent, async (req, res) => {
+  if (req.event.notify_method !== 'email') return res.redirect(back(req));
+  const g = m.getGuest(parseInt(req.params.gid, 10));
+  if (!g || g.event_id !== req.event.id) return res.redirect(back(req));
+  if (!g.email) return res.redirect(back(req, '?err=' + encodeURIComponent('That guest has no email address.')));
+  if (emailBlocked()) return res.redirect(back(req, '?err=' + encodeURIComponent('The free email limit has been reached this month.')));
+  const r = await sendGuestInvite(req.event, g);
+  if (r.ok) {
+    m.markInvited(g.id);
+    return res.redirect(back(req, '?msg=' + encodeURIComponent(`Invite sent to ${g.label}`)));
+  }
+  const note = (r.limit || r.blocked)
+    ? 'The free email limit has been reached this month.'
+    : 'Could not send — please check the email address.';
+  res.redirect(back(req, '?err=' + encodeURIComponent(note)));
 });
 
 router.get('/events/:id/edit', loadOwnedEvent, (req, res) => {

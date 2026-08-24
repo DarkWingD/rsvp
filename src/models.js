@@ -240,6 +240,9 @@ function regenerateGuestToken(id) {
   db.prepare('UPDATE guests SET token = ? WHERE id = ?').run(token, id);
   return token;
 }
+function updateGuestEmail(id, email) {
+  db.prepare('UPDATE guests SET email = ? WHERE id = ?').run(email || null, id);
+}
 function deleteGuest(id) {
   db.prepare('DELETE FROM guests WHERE id = ?').run(id);
 }
@@ -269,6 +272,6 @@ module.exports = {
   countEventsCreatedTodayByOrganizer, countSignupsToday, eventStats,
   // guests
   getGuestWithEventByToken, getGuest, listGuests, countGuests, addGuests,
-  updateGuestRsvp, regenerateGuestToken, deleteGuest, attendees, dietarySummary,
+  updateGuestRsvp, regenerateGuestToken, updateGuestEmail, deleteGuest, attendees, dietarySummary,
   guestsToInvite, guestsToRemind, markInvited, markReminded, markConfirmationSent,
 };

@@ -47,7 +47,7 @@
     <form method="post" action="/organiser/events/<%= event.id %>/guests">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="row2">
-        <div class="field"><label for="guest_name">Name</label><input type="text" id="guest_name" name="guest_name" maxlength="120" required></div>
+        <div class="field"><label for="guest_name">Name</label><input type="text" id="guest_name" name="guest_name" maxlength="120" required <%= (typeof msg !== 'undefined' && msg) ? 'autofocus' : '' %>></div>
         <div class="field"><label for="guest_email">Email</label><input type="email" id="guest_email" name="guest_email" maxlength="200" required></div>
       </div>
       <button class="btn btn-primary" type="submit">Add guest</button>
@@ -71,11 +71,11 @@
   <h2>Email invites</h2>
   <p class="muted small">Invites go to guests you haven't emailed yet; reminders go to those who haven't replied.</p>
   <div class="btn-row">
-    <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/invites/send" data-confirm="Send invites to <%= notInvitedCount %> guest(s)?">
+    <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/invites/send" data-confirm="This will email an invite to <%= notInvitedCount %> guest(s) who haven't been invited yet. Send now?">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <button class="btn btn-primary btn-sm" <%= (notInvitedCount && !emailCapped) ? '' : 'disabled' %>>Send invites (<%= notInvitedCount %>)</button>
     </form>
-    <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/reminders/send" data-confirm="Send a reminder to <%= nonResponderCount %> guest(s)?">
+    <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/reminders/send" data-confirm="This will email a reminder to <%= nonResponderCount %> guest(s) who haven't replied yet. Send now?">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <button class="btn btn-sm" <%= (nonResponderCount && !emailCapped) ? '' : 'disabled' %>>Remind non-responders (<%= nonResponderCount %>)</button>
     </form>
@@ -111,11 +111,23 @@
           </td>
           <td><span class="tag tag-<%= g.rsvp %>"><%= g.rsvp === 'pending' ? 'no reply' : g.rsvp %></span></td>
           <% if (event.notify_method === 'email') { %>
-          <td class="small muted"><%= g.email || '—' %></td>
+          <td class="small">
+            <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/guests/<%= g.id %>/email" style="display:flex; gap:4px; align-items:center">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="email" name="email" value="<%= g.email || '' %>" maxlength="200" placeholder="add email" style="width:150px; padding:4px 6px; font-size:.8rem">
+              <button class="btn btn-sm" title="Save email">Save</button>
+            </form>
+          </td>
           <td class="small"><%= g.invited_at ? '✓' : '—' %></td>
           <% } %>
           <td><button class="btn btn-sm" data-copy="<%= guestUrl(g) %>">Copy</button></td>
           <td style="white-space:nowrap">
+            <% if (event.notify_method === 'email') { %>
+            <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/guests/<%= g.id %>/invite" data-confirm="Email the invite to <%= g.label %> now?">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-sm" title="<%= g.invited_at ? 'Resend invite' : 'Send invite' %>" <%= (!g.email || emailCapped) ? 'disabled' : '' %>>✉</button>
+            </form>
+            <% } %>
             <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/guests/<%= g.id %>/regenerate" data-confirm="Make a new link? The old link will stop working.">
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <button class="btn btn-sm" title="New link">↻</button>
