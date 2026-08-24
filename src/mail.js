@@ -38,7 +38,7 @@ async function notifyAdminNewRequest(org, event) {
 
 // Organiser approved → send them their dashboard link (approve-only; rejections are silent).
 async function notifyRequesterApproved(org) {
-  const link = `${baseUrl}/organizer`;
+  const link = `${baseUrl}/organiser`;
   const subject = 'You can now host events on RSVP';
   const text = `Good news — you're approved to host events.\n\nManage your events: ${link}`;
   const html = `<p>Good news — you're approved to host events.</p>

@@ -22,7 +22,7 @@ friends & family — without making your guests create accounts.
  Guest / Organiser
         │  https://rsvp.example.com
         ▼
- ┌──────────────┐   Cloudflare Access gates /admin & /organizer (email PIN)
+ ┌──────────────┐   Cloudflare Access gates /admin & /organiser (email PIN)
  │  Cloudflare  │   Turnstile + WAF + rate limiting at the edge
  └──────┬───────┘
         │  Cloudflare Tunnel (outbound, no open ports)
@@ -153,7 +153,7 @@ Placeholders below (`rsvp.example.com`, `admin@example.com`) — substitute your
 
 4. **Cloudflare Access** (Zero Trust → Access → Applications → Add a self-hosted app):
    - Application domain: `rsvp.example.com`
-   - **Path**: add an application covering `/admin` and `/organizer` **only** (leave `/` and
+   - **Path**: add an application covering `/admin` and `/organiser` **only** (leave `/` and
      `/r/*` public).
    - Policy: **Allow** with a **One-time PIN** login method.
    - Copy the application **Audience (AUD)** tag and your **team domain** into `.env`

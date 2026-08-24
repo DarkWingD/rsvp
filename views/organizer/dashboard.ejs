@@ -3,7 +3,7 @@
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
   <h1 style="margin:0">Your events</h1>
-  <a class="btn btn-primary" href="/organizer/events/new">+ New event</a>
+  <a class="btn btn-primary" href="/organiser/events/new">+ New event</a>
 </div>
 
 <% if (!events.length) { %>
@@ -26,7 +26,7 @@
       <span class="stat muted"><%= e.stats.pending %> no reply</span>
     </div>
     <div class="btn-row" style="margin-top:12px">
-      <a class="btn btn-sm" href="/organizer/events/<%= e.id %>">Manage &amp; links</a>
+      <a class="btn btn-sm" href="/organiser/events/<%= e.id %>">Manage &amp; links</a>
     </div>
   </div>
 <% }) %>

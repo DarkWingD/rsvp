@@ -36,5 +36,5 @@ console.log('\nGuest links:');
 for (const g of guests) {
   console.log(`  ${g.label.padEnd(8)} ${config.baseUrl}/r/${g.token}`);
 }
-console.log('\nOpen a guest link above to try an RSVP. Admin/organiser pages: ' + config.baseUrl + '/organizer\n');
+console.log('\nOpen a guest link above to try an RSVP. Admin/organiser pages: ' + config.baseUrl + '/organiser\n');
 process.exit(0);

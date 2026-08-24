@@ -26,11 +26,11 @@
     <div><strong><%= o.email %></strong><% if (o.display_name) { %> — <%= o.display_name %><% } %></div>
     <div class="muted small">requested <%= o.created_at %></div>
     <div class="btn-row" style="margin-top:10px">
-      <form class="inline-form" method="post" action="/admin/organizers/<%= o.id %>/approve">
+      <form class="inline-form" method="post" action="/admin/organisers/<%= o.id %>/approve">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button class="btn btn-sm btn-primary">Approve</button>
       </form>
-      <form class="inline-form" method="post" action="/admin/organizers/<%= o.id %>/reject" data-confirm="Reject this request? (No email is sent.)">
+      <form class="inline-form" method="post" action="/admin/organisers/<%= o.id %>/reject" data-confirm="Reject this request? (No email is sent.)">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button class="btn btn-sm btn-danger">Reject</button>
       </form>

@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
 });
 
 // Approve a first-time organiser → their pending events go live; email them their link.
-router.post('/organizers/:id/approve', async (req, res) => {
+router.post('/organisers/:id/approve', async (req, res) => {
   const org = m.getOrganizer(parseInt(req.params.id, 10));
   if (org) {
     m.setOrganizerStatus(org.id, 'approved');
@@ -29,14 +29,14 @@ router.post('/organizers/:id/approve', async (req, res) => {
 });
 
 // Reject (silent — no email).
-router.post('/organizers/:id/reject', (req, res) => {
+router.post('/organisers/:id/reject', (req, res) => {
   const org = m.getOrganizer(parseInt(req.params.id, 10));
   if (org) m.setOrganizerStatus(org.id, 'rejected');
   res.redirect('/admin');
 });
 
 // Revoke an existing organiser → their live/pending events are closed.
-router.post('/organizers/:id/revoke', (req, res) => {
+router.post('/organisers/:id/revoke', (req, res) => {
   const org = m.getOrganizer(parseInt(req.params.id, 10));
   if (org) {
     m.setOrganizerStatus(org.id, 'revoked');

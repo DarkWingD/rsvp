@@ -86,7 +86,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => res.render('home', { title: 'RSVP' }));
 app.get('/privacy', (req, res) => res.render('privacy', { title: 'Privacy', purgeDays: config.purgeDays }));
 app.use('/r', require('./routes/guest'));
-app.use('/organizer', require('./routes/organizer'));
+app.use('/organiser', require('./routes/organizer'));
 app.use('/admin', require('./routes/admin'));
 
 // 404
@@ -107,6 +107,6 @@ app.listen(config.port, '127.0.0.1', () => {
   console.log(`RSVP listening on http://127.0.0.1:${config.port}  (public: ${config.baseUrl})`);
   if (config.devBypassAuth) console.warn('⚠  DEV_BYPASS_AUTH is ON — authentication is bypassed. Do NOT use in production.');
   if (!config.cf.teamDomain && !config.devBypassAuth) {
-    console.warn('⚠  Cloudflare Access is not configured (CF_ACCESS_TEAM_DOMAIN). /organizer and /admin will reject.');
+    console.warn('⚠  Cloudflare Access is not configured (CF_ACCESS_TEAM_DOMAIN). /organiser and /admin will reject.');
   }
 });

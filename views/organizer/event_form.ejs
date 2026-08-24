@@ -5,7 +5,7 @@
 <% if (error) { %><div class="banner banner-error"><%= error %></div><% } %>
 
 <div class="card">
-  <form method="post" action="<%= mode === 'edit' ? '/organizer/events/' + event.id + '/edit' : '/organizer/events' %>">
+  <form method="post" action="<%= mode === 'edit' ? '/organiser/events/' + event.id + '/edit' : '/organiser/events' %>">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <%- include('../partials/event_fields', { values: values }) %>
     <button class="btn btn-primary btn-block" type="submit"><%= mode === 'edit' ? 'Save changes' : 'Create event' %></button>
@@ -14,9 +14,9 @@
 
 <% if (mode === 'edit') { %>
   <p class="muted small">Changing details won't notify guests automatically — re-share the link if something important changed.</p>
-  <p><a href="/organizer/events/<%= event.id %>">← Back to event</a></p>
+  <p><a href="/organiser/events/<%= event.id %>">← Back to event</a></p>
 <% } else { %>
-  <p><a href="/organizer">← Back to your events</a></p>
+  <p><a href="/organiser">← Back to your events</a></p>
 <% } %>
 
 <%- include('../partials/foot') %>

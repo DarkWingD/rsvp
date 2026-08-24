@@ -16,10 +16,10 @@
 <% } %>
 
 <div class="btn-row" style="margin:14px 0">
-  <a class="btn btn-sm" href="/organizer/events/<%= event.id %>/edit">Edit</a>
-  <a class="btn btn-sm" href="/organizer/events/<%= event.id %>/export.csv">Export CSV</a>
+  <a class="btn btn-sm" href="/organiser/events/<%= event.id %>/edit">Edit</a>
+  <a class="btn btn-sm" href="/organiser/events/<%= event.id %>/export.csv">Export CSV</a>
   <% if (event.status === 'live' || event.status === 'pending') { %>
-  <form class="inline-form" method="post" action="/organizer/events/<%= event.id %>/cancel" data-confirm="Cancel this event? Guests will see a cancelled notice.">
+  <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/cancel" data-confirm="Cancel this event? Guests will see a cancelled notice.">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <button class="btn btn-sm btn-danger">Cancel event</button>
   </form>
@@ -38,7 +38,7 @@
 
 <div class="card">
   <h2>Add guests</h2>
-  <form method="post" action="/organizer/events/<%= event.id %>/guests">
+  <form method="post" action="/organiser/events/<%= event.id %>/guests">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="field">
       <label for="names">One name per line</label>
@@ -54,7 +54,7 @@
 
   <div class="filters">
     <% ['all','noreply','yes','maybe','no'].forEach(function (f) { %>
-      <a class="btn btn-sm <%= filter === f ? 'active' : '' %>" href="/organizer/events/<%= event.id %>?filter=<%= f %>"><%= f === 'noreply' ? 'no reply' : f %></a>
+      <a class="btn btn-sm <%= filter === f ? 'active' : '' %>" href="/organiser/events/<%= event.id %>?filter=<%= f %>"><%= f === 'noreply' ? 'no reply' : f %></a>
     <% }) %>
   </div>
 
@@ -78,11 +78,11 @@
           <td><span class="tag tag-<%= g.rsvp %>"><%= g.rsvp === 'pending' ? 'no reply' : g.rsvp %></span></td>
           <td><button class="btn btn-sm" data-copy="<%= guestUrl(g) %>">Copy</button></td>
           <td style="white-space:nowrap">
-            <form class="inline-form" method="post" action="/organizer/events/<%= event.id %>/guests/<%= g.id %>/regenerate" data-confirm="Make a new link? The old link will stop working.">
+            <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/guests/<%= g.id %>/regenerate" data-confirm="Make a new link? The old link will stop working.">
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <button class="btn btn-sm" title="New link">↻</button>
             </form>
-            <form class="inline-form" method="post" action="/organizer/events/<%= event.id %>/guests/<%= g.id %>/delete" data-confirm="Remove this guest?">
+            <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/guests/<%= g.id %>/delete" data-confirm="Remove this guest?">
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <button class="btn btn-sm btn-danger" title="Remove">✕</button>
             </form>
@@ -105,6 +105,6 @@
   </div>
 <% } %>
 
-<p><a href="/organizer">← Back to your events</a></p>
+<p><a href="/organiser">← Back to your events</a></p>
 
 <%- include('../partials/foot') %>

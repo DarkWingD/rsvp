@@ -62,7 +62,7 @@ router.get('/', (req, res) => {
 
 // ─── Request to host (role: new) ─────────────────────────────
 router.post('/request', async (req, res) => {
-  if (req.role !== 'new') return res.redirect('/organizer');
+  if (req.role !== 'new') return res.redirect('/organiser');
   const rerender = (status, error) => res.status(status).render('organizer/request', {
     title: 'Request to host an event', paused: signupsPaused(),
     values: req.body, error, turnstile: config.turnstile.enabled,
@@ -87,12 +87,12 @@ router.post('/request', async (req, res) => {
 
 // ─── Create event (role: admin/approved) ─────────────────────
 router.get('/events/new', (req, res) => {
-  if (!canOrganise(req.role)) return res.redirect('/organizer');
+  if (!canOrganise(req.role)) return res.redirect('/organiser');
   res.render('organizer/event_form', { title: 'New event', mode: 'new', event: null, values: { theme: 'modern' }, error: null });
 });
 
 router.post('/events', (req, res) => {
-  if (!canOrganise(req.role)) return res.redirect('/organizer');
+  if (!canOrganise(req.role)) return res.redirect('/organiser');
   const org = currentOrganizer(req);
   const fail = (status, error) => res.status(status).render('organizer/event_form', {
     title: 'New event', mode: 'new', event: null, values: req.body, error,
@@ -111,12 +111,12 @@ router.post('/events', (req, res) => {
   if (errors.length) return fail(400, errors.join(' '));
 
   const event = m.createEvent(data, org);
-  res.redirect(`/organizer/events/${event.id}`);
+  res.redirect(`/organiser/events/${event.id}`);
 });
 
 // ─── Manage a single event ───────────────────────────────────
 function loadOwnedEvent(req, res, next) {
-  if (!canOrganise(req.role)) return res.redirect('/organizer');
+  if (!canOrganise(req.role)) return res.redirect('/organiser');
   const org = currentOrganizer(req);
   const ev = m.getEventForOrganizer(parseInt(req.params.id, 10), org ? org.id : -1, req.role === 'admin');
   if (!ev) return res.status(404).render('error', { title: 'Not found', message: 'Event not found.' });
@@ -142,19 +142,19 @@ router.post('/events/:id/guests', loadOwnedEvent, (req, res) => {
   const room = config.caps.guestsPerEvent - m.countGuests(req.event.id);
   const toAdd = names.slice(0, Math.max(0, room));
   if (toAdd.length) m.addGuests(req.event.id, toAdd);
-  res.redirect(`/organizer/events/${req.event.id}`);
+  res.redirect(`/organiser/events/${req.event.id}`);
 });
 
 router.post('/events/:id/guests/:gid/regenerate', loadOwnedEvent, (req, res) => {
   const g = m.getGuest(parseInt(req.params.gid, 10));
   if (g && g.event_id === req.event.id) m.regenerateGuestToken(g.id);
-  res.redirect(`/organizer/events/${req.event.id}`);
+  res.redirect(`/organiser/events/${req.event.id}`);
 });
 
 router.post('/events/:id/guests/:gid/delete', loadOwnedEvent, (req, res) => {
   const g = m.getGuest(parseInt(req.params.gid, 10));
   if (g && g.event_id === req.event.id) m.deleteGuest(g.id);
-  res.redirect(`/organizer/events/${req.event.id}`);
+  res.redirect(`/organiser/events/${req.event.id}`);
 });
 
 router.get('/events/:id/edit', loadOwnedEvent, (req, res) => {
@@ -171,12 +171,12 @@ router.post('/events/:id/edit', loadOwnedEvent, (req, res) => {
     });
   }
   m.updateEvent(req.event.id, data);
-  res.redirect(`/organizer/events/${req.event.id}`);
+  res.redirect(`/organiser/events/${req.event.id}`);
 });
 
 router.post('/events/:id/cancel', loadOwnedEvent, (req, res) => {
   m.setEventStatus(req.event.id, 'cancelled');
-  res.redirect(`/organizer/events/${req.event.id}`);
+  res.redirect(`/organiser/events/${req.event.id}`);
 });
 
 router.get('/events/:id/export.csv', loadOwnedEvent, (req, res) => {
