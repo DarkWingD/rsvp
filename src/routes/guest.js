@@ -18,8 +18,19 @@ function rateLimited(token, max) {
   editHits.set(token, arr);
   return false;
 }
+// Entries for tokens that stop editing were never removed, so the map grew for
+// the life of the process. Sweep hourly.
+setInterval(() => {
+  const cutoff = Date.now() - 3600 * 1000;
+  for (const [token, arr] of editHits) {
+    if (!arr.some((t) => t > cutoff)) editHits.delete(token);
+  }
+}, 3600 * 1000).unref();
 
 function loadGuest(req, res, next) {
+  // Personal details behind a capability URL: keep them out of shared caches
+  // and the browser's back/forward cache on shared devices.
+  res.set('Cache-Control', 'no-store');
   const guest = m.getGuestWithEventByToken(req.params.token);
   if (!guest) return res.status(404).render('guest/notfound', { title: 'Not found' });
   req.guest = guest;

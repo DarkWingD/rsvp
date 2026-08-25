@@ -269,3 +269,11 @@ body.theme-app .theme-preview.theme-elegant { background: linear-gradient(180deg
 .tp-btn { font-size: .78rem; padding: 7px 12px; border: 1.5px solid var(--border); border-radius: var(--btn-radius); background: var(--card); color: var(--fg); }
 .theme-preview.theme-elegant .tp-btn { text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; }
 .tp-btn.tp-yes { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+
+/* Inline nudge when Save is tapped with no RSVP choice made. */
+.rsvp-inline-error { color: var(--danger, #b91c1c); font-size: .85rem; margin: 4px 0 10px; }
+
+/* Keep the fixed theme pill clear of the first card on narrow screens. */
+@media (max-width: 480px) {
+  .page { padding-top: 44px; }
+}

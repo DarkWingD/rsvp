@@ -11,11 +11,33 @@ ExecStart=/usr/bin/node src/server.js
 Restart=always
 RestartSec=3
 
-# Hardening
+# Hardening. Outbound HTTPS must stay open (Resend, Turnstile, Access JWKS),
+# so there is deliberately no IP egress filter. Never add
+# MemoryDenyWriteExecute — V8's JIT needs W+X and Node will not start.
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=full
+PrivateDevices=true
+ProtectSystem=strict
+ReadWritePaths=/opt/%N/app
 ProtectHome=true
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources @obsolete
+UMask=0077
 
 [Install]
 WantedBy=multi-user.target

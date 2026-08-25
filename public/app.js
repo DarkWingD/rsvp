@@ -39,6 +39,33 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // RSVP forms: only show headcount/dietary once Yes/Maybe is chosen (they're
+  // irrelevant to a No), and catch a missing choice next to the buttons instead
+  // of a server round-trip that shows the error a screen away.
+  document.querySelectorAll('form').forEach(function (form) {
+    var options = form.querySelector('.rsvp-options');
+    if (!options) return;
+    var details = form.querySelector('.rsvp-details');
+    var inlineErr = form.querySelector('.rsvp-inline-error');
+    var radios = options.querySelectorAll('input[name="rsvp"]');
+    var current = function () {
+      var r = form.querySelector('input[name="rsvp"]:checked');
+      return r ? r.value : null;
+    };
+    var sync = function () {
+      if (details) details.style.display = current() === 'no' || !current() ? 'none' : '';
+      if (inlineErr && current()) inlineErr.hidden = true;
+    };
+    radios.forEach(function (r) { r.addEventListener('change', sync); });
+    sync();
+    form.addEventListener('submit', function (e) {
+      if (!current()) {
+        e.preventDefault();
+        if (inlineErr) { inlineErr.hidden = false; options.scrollIntoView({ block: 'center' }); }
+      }
+    });
+  });
+
   // Reveal the "ask dietary" option only when "has food" is ticked.
   var food = document.getElementById('has_food');
   var dietRow = document.getElementById('dietrow');

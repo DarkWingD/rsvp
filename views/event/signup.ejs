@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: event.title, theme: event.theme }) %>
+<%- include('../partials/head', { title: event.title, theme: event.theme, turnstile: turnstileOn }) %>
 <%
   const rlabels = {
     cancelled: 'This event has been cancelled.',
@@ -47,8 +47,10 @@
         </div>
       </div>
 
+      <p class="rsvp-inline-error" hidden>Please choose one of the options above first.</p>
+
       <% if (event.ask_adults || event.ask_kids) { %>
-      <div class="row2">
+      <div class="rsvp-details row2">
         <% if (event.ask_adults) { %>
         <div class="field"><label for="adults">Adults (incl. you)</label><input type="number" id="adults" name="adults" min="1" max="30" value="<%= values.adults || 1 %>"></div>
         <% } %>
@@ -58,6 +60,9 @@
       </div>
       <% } %>
 
+      <% if (turnstileOn) { %>
+      <div class="cf-turnstile" data-sitekey="<%= turnstileSiteKey %>" style="margin-bottom:12px"></div>
+      <% } %>
       <button class="btn btn-primary btn-block" type="submit">Send</button>
     </form>
   </div>

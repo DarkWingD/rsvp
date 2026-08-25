@@ -7,6 +7,10 @@
   <meta name="robots" content="noindex, nofollow">
   <title><%= typeof title !== 'undefined' ? title : 'RSVP' %> · RSVP</title>
   <% var _v = (typeof assetVer !== 'undefined' && assetVer) ? ('?v=' + assetVer) : ''; %>
+  <meta name="theme-color" content="#2563eb">
+  <link rel="icon" href="/favicon.svg<%= _v %>" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/app.css<%= _v %>">
   <script src="/app.js<%= _v %>"></script>
   <% if (typeof turnstile !== 'undefined' && turnstile) { %>

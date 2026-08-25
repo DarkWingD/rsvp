@@ -5,6 +5,7 @@ const router = express.Router();
 const m = require('../models');
 const config = require('../config');
 const { parseSignup } = require('../validate');
+const { verifyTurnstile } = require('../turnstile');
 const { isPastDate, isPastLocal } = require('../time');
 
 function loadEvent(req, res, next) {
@@ -26,27 +27,32 @@ function readonlyReason(ev) {
 
 function render(req, res, extra) {
   const ev = req.event;
+  res.set('Cache-Control', 'no-store');
   const visible = ev.public_visibility;
   const stats = (visible === 'total' || visible === 'list') ? m.eventStats(ev.id) : null;
   const list = visible === 'list' ? m.publicAttendees(ev.id) : [];
   res.render('event/signup', Object.assign({
-    title: ev.title, theme: ev.theme, event: ev,
+    title: ev.title, theme: ev.theme, event: ev, turnstileOn: config.turnstile.enabled,
     readonly: readonlyReason(ev), stats, list, done: false, error: null, values: {},
   }, extra));
 }
 
 router.get('/:token', loadEvent, (req, res) => render(req, res, { done: req.query.done === '1' }));
 
-router.post('/:token', loadEvent, (req, res) => {
+router.post('/:token', loadEvent, async (req, res) => {
   const reason = readonlyReason(req.event);
   if (reason) return res.status(409).render('event/signup', {
-    title: req.event.title, theme: req.event.theme, event: req.event,
+    title: req.event.title, theme: req.event.theme, event: req.event, turnstileOn: config.turnstile.enabled,
     readonly: reason, stats: null, list: [], done: false, values: {},
     error: 'This event is no longer accepting responses.',
   });
   if (m.countGuests(req.event.id) >= config.caps.guestsPerEvent) {
     return render(req, res, { error: 'This event is full.', values: req.body });
   }
+  // The shared link is semi-public (group chats get forwarded); Turnstile keeps
+  // scripted junk sign-ups from polluting a real event's list.
+  const human = await verifyTurnstile(req.body['cf-turnstile-response'], req.ip);
+  if (!human) return render(req, res, { error: 'Captcha check failed. Please try again.', values: req.body });
   const { errors, data } = parseSignup(req.body, req.event);
   if (errors.length) return render(req, res, { error: errors.join(' '), values: req.body });
   m.addSignup(req.event.id, data);
