@@ -27,7 +27,7 @@ const event = createEvent({
   guests_see_each_other: false,
 }, org);
 
-addGuests(event.id, ['Sarah', 'Tom', 'Priya']);
+addGuests(event.id, [{ label: 'Sarah' }, { label: 'Tom' }, { label: 'Priya' }]);
 const guests = listGuests(event.id);
 
 console.log('\nSeeded demo event:', event.title, `(id ${event.id}, status ${event.status})`);
@@ -36,5 +36,5 @@ console.log('\nGuest links:');
 for (const g of guests) {
   console.log(`  ${g.label.padEnd(8)} ${config.baseUrl}/r/${g.token}`);
 }
-console.log('\nOpen a guest link above to try an RSVP. Admin/organiser pages: ' + config.baseUrl + '/organizer\n');
+console.log('\nOpen a guest link above to try an RSVP. Admin/organiser pages: ' + config.baseUrl + '/organiser\n');
 process.exit(0);

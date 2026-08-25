@@ -43,18 +43,75 @@
     <option value="warm" <%= values.theme === 'warm' ? 'selected' : '' %>>Warm &amp; friendly</option>
     <option value="elegant" <%= values.theme === 'elegant' ? 'selected' : '' %>>Elegant invitation</option>
   </select>
+  <div class="hint">Preview updates as you choose — this is roughly what your guests will see.</div>
+  <div id="theme-preview" class="theme-preview theme-<%= values.theme || 'modern' %>">
+    <div class="tp-card">
+      <div class="tp-eyebrow">You're invited</div>
+      <div class="tp-title" id="tp-title"><%= values.title || 'Your event title' %></div>
+      <div class="tp-meta">📅 Sat 12 Oct · 3:00pm</div>
+      <div class="tp-meta" id="tp-loc">📍 <%= values.location || 'Location' %></div>
+      <div class="tp-options">
+        <span class="tp-btn tp-yes">Yes, I'll be there</span>
+        <span class="tp-btn">Maybe</span>
+        <span class="tp-btn">Can't make it</span>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="checkbox">
-  <input type="checkbox" id="has_food" name="has_food" <%= values.has_food ? 'checked' : '' %>>
-  <label for="has_food">This event has food</label>
-</div>
-<div class="checkbox" id="dietrow" style="margin-left:26px; display:<%= values.has_food ? 'flex' : 'none' %>">
-  <input type="checkbox" id="ask_dietary" name="ask_dietary" <%= values.ask_dietary ? 'checked' : '' %>>
-  <label for="ask_dietary">Ask guests for dietary requirements</label>
+<div class="field">
+  <label>How do people join?</label>
+  <div class="checkbox">
+    <input type="radio" id="am_guest" name="access_mode" value="per_guest" <%= (values.access_mode || 'per_guest') !== 'open_link' ? 'checked' : '' %>>
+    <label for="am_guest">I'll add named guests (each gets a private link)</label>
+  </div>
+  <div class="checkbox">
+    <input type="radio" id="am_open" name="access_mode" value="open_link" <%= values.access_mode === 'open_link' ? 'checked' : '' %>>
+    <label for="am_open">Open sign-up — one shared link people fill in themselves</label>
+  </div>
 </div>
 
-<div class="checkbox">
-  <input type="checkbox" id="guests_see_each_other" name="guests_see_each_other" <%= values.guests_see_each_other ? 'checked' : '' %>>
-  <label for="guests_see_each_other">Let guests see who else is coming</label>
+<div id="per-guest-opts" style="display:<%= values.access_mode === 'open_link' ? 'none' : 'block' %>">
+  <div class="field">
+    <label>How will guests be notified?</label>
+    <div class="checkbox">
+      <input type="radio" id="nm_direct" name="notify_method" value="direct_link" <%= (values.notify_method || 'direct_link') !== 'email' ? 'checked' : '' %>>
+      <label for="nm_direct">I'll share each guest's link myself (no emails collected)</label>
+    </div>
+    <div class="checkbox">
+      <input type="radio" id="nm_email" name="notify_method" value="email" <%= values.notify_method === 'email' ? 'checked' : '' %>>
+      <label for="nm_email">Email guests their invite (you'll add each guest's name &amp; email)</label>
+    </div>
+  </div>
+  <div class="checkbox">
+    <input type="checkbox" id="guests_see_each_other" name="guests_see_each_other" <%= values.guests_see_each_other ? 'checked' : '' %>>
+    <label for="guests_see_each_other">Let guests see who else is coming</label>
+  </div>
+  <div class="checkbox">
+    <input type="checkbox" id="has_food" name="has_food" <%= values.has_food ? 'checked' : '' %>>
+    <label for="has_food">This event has food</label>
+  </div>
+  <div class="checkbox" id="dietrow" style="margin-left:26px; display:<%= values.has_food ? 'flex' : 'none' %>">
+    <input type="checkbox" id="ask_dietary" name="ask_dietary" <%= values.ask_dietary ? 'checked' : '' %>>
+    <label for="ask_dietary">Ask guests for dietary requirements</label>
+  </div>
+</div>
+
+<div id="open-link-opts" style="display:<%= values.access_mode === 'open_link' ? 'block' : 'none' %>">
+  <div class="checkbox">
+    <input type="checkbox" id="ask_adults" name="ask_adults" <%= values.ask_adults ? 'checked' : '' %>>
+    <label for="ask_adults">Ask how many adults are coming (plus-ones)</label>
+  </div>
+  <div class="checkbox">
+    <input type="checkbox" id="ask_kids" name="ask_kids" <%= values.ask_kids ? 'checked' : '' %>>
+    <label for="ask_kids">Ask how many kids are coming</label>
+  </div>
+  <div class="field" style="margin-top:10px">
+    <label for="public_visibility">On the shared page, people can see…</label>
+    <select id="public_visibility" name="public_visibility">
+      <option value="none" <%= (values.public_visibility || 'none') === 'none' ? 'selected' : '' %>>Nothing (just a thank-you)</option>
+      <option value="total" <%= values.public_visibility === 'total' ? 'selected' : '' %>>The total headcount</option>
+      <option value="list" <%= values.public_visibility === 'list' ? 'selected' : '' %>>The full list of who's coming</option>
+    </select>
+  </div>
 </div>

@@ -1,0 +1,90 @@
+<%- include('../partials/head', { title: event.title, theme: event.theme }) %>
+<%
+  const rlabels = {
+    cancelled: 'This event has been cancelled.',
+    closed: 'Sign-ups have closed for this event.',
+    past: 'This event has already taken place.',
+    unavailable: "This event isn't currently open for sign-ups."
+  };
+%>
+
+<div class="card">
+  <div class="guest-head">
+    <% if (event.theme === 'elegant') { %><div class="eyebrow">You're invited</div><% } %>
+    <h1><%= event.title %></h1>
+    <div class="meta"><span class="ico">📅</span><span><%= fmtDateTime(event.starts_at) %><% if (event.ends_at) { %> – <%= fmtTime(event.ends_at) %><% } %></span></div>
+    <% if (event.location) { %>
+    <div class="meta"><span class="ico">📍</span>
+      <% if (isUrl(event.location)) { %><a href="<%= event.location %>" target="_blank" rel="noopener noreferrer"><%= mapLabel(event.location) %> ↗</a><% } else { %><span><%= event.location %></span><% } %>
+    </div>
+    <% } %>
+    <% if (event.description) { %><p style="margin-top:10px; white-space:pre-line"><%= event.description %></p><% } %>
+  </div>
+</div>
+
+<% if (typeof error !== 'undefined' && error) { %><div class="banner banner-error"><%= error %></div><% } %>
+
+<% if (done) { %>
+  <div class="banner banner-success"><strong>You're on the list! 🎉</strong> Thanks for letting us know.</div>
+  <p><a class="btn" href="/e/<%= event.public_token %>">Add another person</a></p>
+<% } else if (readonly) { %>
+  <div class="banner <%= readonly === 'cancelled' ? 'banner-error' : 'banner-info' %>"><%= rlabels[readonly] %></div>
+<% } else { %>
+  <div class="card">
+    <form method="post" action="/e/<%= event.public_token %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field">
+        <label for="signup_name">Your name</label>
+        <input type="text" id="signup_name" name="signup_name" maxlength="120" required value="<%= values.signup_name || '' %>">
+      </div>
+
+      <div class="field">
+        <label>Are you coming?</label>
+        <div class="rsvp-options">
+          <label class="rsvp-choice sel-yes"><input type="radio" name="rsvp" value="yes" <%= values.rsvp !== 'no' && values.rsvp !== 'maybe' ? 'checked' : '' %>> Yes, count me in</label>
+          <label class="rsvp-choice sel-maybe"><input type="radio" name="rsvp" value="maybe" <%= values.rsvp === 'maybe' ? 'checked' : '' %>> Maybe</label>
+          <label class="rsvp-choice sel-no"><input type="radio" name="rsvp" value="no" <%= values.rsvp === 'no' ? 'checked' : '' %>> Can't make it</label>
+        </div>
+      </div>
+
+      <% if (event.ask_adults || event.ask_kids) { %>
+      <div class="row2">
+        <% if (event.ask_adults) { %>
+        <div class="field"><label for="adults">Adults (incl. you)</label><input type="number" id="adults" name="adults" min="1" max="30" value="<%= values.adults || 1 %>"></div>
+        <% } %>
+        <% if (event.ask_kids) { %>
+        <div class="field"><label for="kids">Kids</label><input type="number" id="kids" name="kids" min="0" max="30" value="<%= values.kids || 0 %>"></div>
+        <% } %>
+      </div>
+      <% } %>
+
+      <button class="btn btn-primary btn-block" type="submit">Send</button>
+    </form>
+  </div>
+<% } %>
+
+<% if (event.public_visibility === 'total' && stats) { %>
+  <div class="card center">
+    <div class="stats" style="justify-content:center">
+      <span class="stat"><b><%= stats.headcount %></b> coming</span>
+      <% if (event.ask_adults) { %><span class="stat muted"><%= stats.adults %> adults</span><% } %>
+      <% if (event.ask_kids) { %><span class="stat muted"><%= stats.kids %> kids</span><% } %>
+    </div>
+  </div>
+<% } else if (event.public_visibility === 'list' && stats) { %>
+  <div class="card">
+    <h2>Who's coming (<%= stats.headcount %>)</h2>
+    <% if (!list.length) { %><p class="muted">No one yet — be the first!</p><% } else { %>
+    <ul style="list-style:none; padding:0; margin:6px 0 0">
+      <% list.forEach(function (g) { %>
+      <li style="padding:9px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; gap:10px">
+        <span><strong><%= g.label %></strong></span>
+        <span class="muted small"><%= g.rsvp === 'maybe' ? 'maybe · ' : '' %><%= g.party_size %> adult<%= g.party_size === 1 ? '' : 's' %><% if (g.kids > 0) { %>, <%= g.kids %> kid<%= g.kids === 1 ? '' : 's' %><% } %></span>
+      </li>
+      <% }) %>
+    </ul>
+    <% } %>
+  </div>
+<% } %>
+
+<%- include('../partials/foot') %>

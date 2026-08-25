@@ -9,10 +9,10 @@ const router = express.Router();
 const { requireAuth } = require('../auth');
 const m = require('../models');
 const config = require('../config');
-const { signupsPaused } = require('../db');
-const { parseEventForm, parseGuestNames } = require('../validate');
+const { signupsPaused, emailBlocked } = require('../db');
+const { parseEventForm, parseGuestNames, parseGuestOne } = require('../validate');
 const { verifyTurnstile } = require('../turnstile');
-const { notifyAdminNewRequest } = require('../mail');
+const { notifyAdminNewRequest, sendGuestInvite, sendGuestReminder } = require('../mail');
 
 router.use(requireAuth());
 
@@ -35,10 +35,15 @@ function eventToFormValues(ev) {
     rsvp_deadline: ev.rsvp_deadline || '', theme: ev.theme,
     has_food: ev.has_food, ask_dietary: ev.ask_dietary,
     guests_see_each_other: ev.guests_see_each_other,
+    notify_method: ev.notify_method,
+    access_mode: ev.access_mode,
+    ask_adults: ev.ask_adults, ask_kids: ev.ask_kids,
+    public_visibility: ev.public_visibility,
   };
 }
 function csvCell(v) {
   v = String(v == null ? '' : v);
+  if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; // neutralise spreadsheet formula injection
   return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
 }
 
@@ -62,7 +67,7 @@ router.get('/', (req, res) => {
 
 // ─── Request to host (role: new) ─────────────────────────────
 router.post('/request', async (req, res) => {
-  if (req.role !== 'new') return res.redirect('/organizer');
+  if (req.role !== 'new') return res.redirect('/organiser');
   const rerender = (status, error) => res.status(status).render('organizer/request', {
     title: 'Request to host an event', paused: signupsPaused(),
     values: req.body, error, turnstile: config.turnstile.enabled,
@@ -77,6 +82,9 @@ router.post('/request', async (req, res) => {
 
   const { errors, data } = parseEventForm(req.body);
   if (errors.length) return rerender(400, errors.join(' '));
+  if (data.notify_method === 'email' && emailBlocked()) {
+    return rerender(400, 'Email invites are paused — the free email limit has been reached this month. Choose "I\'ll share links myself" for now.');
+  }
 
   const displayName = (req.body.display_name || '').trim().slice(0, 120) || null;
   const org = m.ensureOrganizer(req.userEmail, displayName); // created as pending
@@ -87,12 +95,12 @@ router.post('/request', async (req, res) => {
 
 // ─── Create event (role: admin/approved) ─────────────────────
 router.get('/events/new', (req, res) => {
-  if (!canOrganise(req.role)) return res.redirect('/organizer');
+  if (!canOrganise(req.role)) return res.redirect('/organiser');
   res.render('organizer/event_form', { title: 'New event', mode: 'new', event: null, values: { theme: 'modern' }, error: null });
 });
 
 router.post('/events', (req, res) => {
-  if (!canOrganise(req.role)) return res.redirect('/organizer');
+  if (!canOrganise(req.role)) return res.redirect('/organiser');
   const org = currentOrganizer(req);
   const fail = (status, error) => res.status(status).render('organizer/event_form', {
     title: 'New event', mode: 'new', event: null, values: req.body, error,
@@ -109,14 +117,17 @@ router.post('/events', (req, res) => {
   }
   const { errors, data } = parseEventForm(req.body);
   if (errors.length) return fail(400, errors.join(' '));
+  if (data.notify_method === 'email' && emailBlocked()) {
+    return fail(400, 'Email invites are paused — the free email limit has been reached this month. Choose "I\'ll share links myself", or try again next month.');
+  }
 
   const event = m.createEvent(data, org);
-  res.redirect(`/organizer/events/${event.id}`);
+  res.redirect(`/organiser/events/${event.id}`);
 });
 
 // ─── Manage a single event ───────────────────────────────────
 function loadOwnedEvent(req, res, next) {
-  if (!canOrganise(req.role)) return res.redirect('/organizer');
+  if (!canOrganise(req.role)) return res.redirect('/organiser');
   const org = currentOrganizer(req);
   const ev = m.getEventForOrganizer(parseInt(req.params.id, 10), org ? org.id : -1, req.role === 'admin');
   if (!ev) return res.status(404).render('error', { title: 'Not found', message: 'Event not found.' });
@@ -134,27 +145,112 @@ router.get('/events/:id', loadOwnedEvent, (req, res) => {
     title: req.event.title, event: req.event, guests, allCount: all.length,
     filter, stats: m.eventStats(req.event.id), dietary: m.dietarySummary(req.event.id),
     caps: config.caps,
+    notInvitedCount: all.filter((g) => g.email && !g.invited_at).length,
+    nonResponderCount: all.filter((g) => g.email && g.rsvp === 'pending').length,
+    mailEnabled: config.mail.enabled,
+    emailCapped: emailBlocked(),
+    msg: req.query.msg || null,
+    error: req.query.err || null,
   });
 });
 
+const back = (req, extra) => `/organiser/events/${req.event.id}${extra || ''}`;
+
 router.post('/events/:id/guests', loadOwnedEvent, (req, res) => {
-  const names = parseGuestNames(req.body.names, config.caps.guestsPerRequest);
   const room = config.caps.guestsPerEvent - m.countGuests(req.event.id);
-  const toAdd = names.slice(0, Math.max(0, room));
+  if (room <= 0) return res.redirect(back(req, '?err=' + encodeURIComponent('Guest limit reached for this event.')));
+
+  if (req.event.notify_method === 'email') {
+    const { errors, data } = parseGuestOne(req.body, true);
+    if (errors.length) return res.redirect(back(req, '?err=' + encodeURIComponent(errors.join(' '))));
+    m.addGuests(req.event.id, [{ label: data.label, email: data.email }]);
+    return res.redirect(back(req, '?msg=' + encodeURIComponent(`Added ${data.label} (${data.email})`)));
+  }
+  const names = parseGuestNames(req.body.names, config.caps.guestsPerRequest);
+  const toAdd = names.slice(0, Math.max(0, room)).map((n) => ({ label: n, email: null }));
   if (toAdd.length) m.addGuests(req.event.id, toAdd);
-  res.redirect(`/organizer/events/${req.event.id}`);
+  const n = toAdd.length;
+  res.redirect(back(req, n ? '?msg=' + encodeURIComponent(`Added ${n} guest${n > 1 ? 's' : ''}`) : ''));
+});
+
+// Send invites to guests who have an email and haven't been invited yet.
+router.post('/events/:id/invites/send', loadOwnedEvent, async (req, res) => {
+  if (req.event.notify_method !== 'email') return res.redirect(back(req));
+  if (emailBlocked()) return res.redirect(back(req, '?err=' + encodeURIComponent('The free email limit has been reached this month — email invites are paused.')));
+  const pending = m.guestsToInvite(req.event.id);
+  let sent = 0;
+  let capped = false;
+  for (const g of pending) {
+    const r = await sendGuestInvite(req.event, g);
+    if (r.ok) { m.markInvited(g.id); sent += 1; }
+    if (r.limit || r.blocked) { capped = true; break; }
+    await new Promise((s) => setTimeout(s, 550)); // stay under Resend's per-second rate limit
+  }
+  const note = capped
+    ? `Sent ${sent} invite(s), then hit the free email limit — the rest are paused until next month.`
+    : `Sent ${sent} invite(s).`;
+  res.redirect(back(req, '?msg=' + encodeURIComponent(note)));
+});
+
+// Remind guests who have an email and haven't responded.
+router.post('/events/:id/reminders/send', loadOwnedEvent, async (req, res) => {
+  if (req.event.notify_method !== 'email') return res.redirect(back(req));
+  if (emailBlocked()) return res.redirect(back(req, '?err=' + encodeURIComponent('The free email limit has been reached this month — reminders are paused.')));
+  const pending = m.guestsToRemind(req.event.id);
+  let sent = 0;
+  let capped = false;
+  for (const g of pending) {
+    const r = await sendGuestReminder(req.event, g);
+    if (r.ok) { m.markReminded(g.id); sent += 1; }
+    if (r.limit || r.blocked) { capped = true; break; }
+    await new Promise((s) => setTimeout(s, 550));
+  }
+  const note = capped
+    ? `Sent ${sent} reminder(s), then hit the free email limit.`
+    : `Sent ${sent} reminder(s).`;
+  res.redirect(back(req, '?msg=' + encodeURIComponent(note)));
 });
 
 router.post('/events/:id/guests/:gid/regenerate', loadOwnedEvent, (req, res) => {
   const g = m.getGuest(parseInt(req.params.gid, 10));
   if (g && g.event_id === req.event.id) m.regenerateGuestToken(g.id);
-  res.redirect(`/organizer/events/${req.event.id}`);
+  res.redirect(`/organiser/events/${req.event.id}`);
 });
 
 router.post('/events/:id/guests/:gid/delete', loadOwnedEvent, (req, res) => {
   const g = m.getGuest(parseInt(req.params.gid, 10));
   if (g && g.event_id === req.event.id) m.deleteGuest(g.id);
-  res.redirect(`/organizer/events/${req.event.id}`);
+  res.redirect(`/organiser/events/${req.event.id}`);
+});
+
+// Edit a single guest's email address.
+router.post('/events/:id/guests/:gid/email', loadOwnedEvent, (req, res) => {
+  const g = m.getGuest(parseInt(req.params.gid, 10));
+  if (!g || g.event_id !== req.event.id) return res.redirect(back(req));
+  const email = (req.body.email || '').trim().toLowerCase().slice(0, 200);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.redirect(back(req, '?err=' + encodeURIComponent('That email doesn’t look valid.')));
+  }
+  m.updateGuestEmail(g.id, email || null);
+  res.redirect(back(req, '?msg=' + encodeURIComponent(`Updated ${g.label}'s email`)));
+});
+
+// Send/resend the invite to a single guest.
+router.post('/events/:id/guests/:gid/invite', loadOwnedEvent, async (req, res) => {
+  if (req.event.notify_method !== 'email') return res.redirect(back(req));
+  const g = m.getGuest(parseInt(req.params.gid, 10));
+  if (!g || g.event_id !== req.event.id) return res.redirect(back(req));
+  if (!g.email) return res.redirect(back(req, '?err=' + encodeURIComponent('That guest has no email address.')));
+  if (emailBlocked()) return res.redirect(back(req, '?err=' + encodeURIComponent('The free email limit has been reached this month.')));
+  const r = await sendGuestInvite(req.event, g);
+  if (r.ok) {
+    m.markInvited(g.id);
+    return res.redirect(back(req, '?msg=' + encodeURIComponent(`Invite sent to ${g.label}`)));
+  }
+  const note = (r.limit || r.blocked)
+    ? 'The free email limit has been reached this month.'
+    : 'Could not send — please check the email address.';
+  res.redirect(back(req, '?err=' + encodeURIComponent(note)));
 });
 
 router.get('/events/:id/edit', loadOwnedEvent, (req, res) => {
@@ -171,18 +267,18 @@ router.post('/events/:id/edit', loadOwnedEvent, (req, res) => {
     });
   }
   m.updateEvent(req.event.id, data);
-  res.redirect(`/organizer/events/${req.event.id}`);
+  res.redirect(`/organiser/events/${req.event.id}`);
 });
 
 router.post('/events/:id/cancel', loadOwnedEvent, (req, res) => {
   m.setEventStatus(req.event.id, 'cancelled');
-  res.redirect(`/organizer/events/${req.event.id}`);
+  res.redirect(`/organiser/events/${req.event.id}`);
 });
 
 router.get('/events/:id/export.csv', loadOwnedEvent, (req, res) => {
-  const rows = [['Name', 'RSVP', 'Party size', 'Dietary', 'Notes', 'Responded at']];
+  const rows = [['Name', 'Email', 'RSVP', 'Party size', 'Dietary', 'Notes', 'Invited at', 'Responded at']];
   for (const g of m.listGuests(req.event.id)) {
-    rows.push([g.label, g.rsvp, g.party_size, g.dietary || '', g.notes || '', g.responded_at || '']);
+    rows.push([g.label, g.email || '', g.rsvp, g.party_size, g.dietary || '', g.notes || '', g.invited_at || '', g.responded_at || '']);
   }
   const csv = rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');

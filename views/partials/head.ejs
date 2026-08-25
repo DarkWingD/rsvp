@@ -6,11 +6,13 @@
   <meta name="color-scheme" content="light dark">
   <meta name="robots" content="noindex, nofollow">
   <title><%= typeof title !== 'undefined' ? title : 'RSVP' %> · RSVP</title>
-  <link rel="stylesheet" href="/app.css">
-  <script src="/app.js" defer></script>
+  <% var _v = (typeof assetVer !== 'undefined' && assetVer) ? ('?v=' + assetVer) : ''; %>
+  <link rel="stylesheet" href="/app.css<%= _v %>">
+  <script src="/app.js<%= _v %>"></script>
   <% if (typeof turnstile !== 'undefined' && turnstile) { %>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <% } %>
 </head>
 <body class="theme-<%= (typeof theme !== 'undefined' && theme) ? theme : 'app' %>">
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Colour scheme">🌗 Auto</button>
   <main class="page<%= (typeof wide !== 'undefined' && wide) ? ' page-wide' : '' %>">

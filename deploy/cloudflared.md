@@ -47,7 +47,7 @@ In the Zero Trust dashboard → **Access → Applications → Add an application
 - **Application domain:** `rsvp.example.com`
 - Add **two paths** so only the management areas are gated:
   - `rsvp.example.com/admin`
-  - `rsvp.example.com/organizer`
+  - `rsvp.example.com/organiser`
   - Leave `/` and `/r/*` **public** (guests must not be asked to log in).
 - **Identity / login method:** enable **One-time PIN**.
 - **Policy:** Action **Allow**. For a private tool you can Allow *everyone* (the app then
@@ -56,14 +56,14 @@ In the Zero Trust dashboard → **Access → Applications → Add an application
   - the **Application Audience (AUD) tag** → `CF_ACCESS_AUD` in `.env`
   - your **team domain** (e.g. `https://yourteam.cloudflareaccess.com`) → `CF_ACCESS_TEAM_DOMAIN`
 
-> The app **verifies** the Access JWT on every `/admin` and `/organizer` request, so nobody on
+> The app **verifies** the Access JWT on every `/admin` and `/organiser` request, so nobody on
 > your LAN can bypass Cloudflare by hitting `localhost` directly.
 
 ## 6. Edge protection (recommended, free)
 
 - **Turnstile:** create a widget, put the site/secret keys in `.env`.
 - **Bot Fight Mode** + **Managed WAF:** turn on in the dashboard.
-- **Rate limiting:** add one rule targeting `POST /organizer/request` and `POST /r/*`.
+- **Rate limiting:** add one rule targeting `POST /organiser/request` and `POST /r/*`.
 
 ## 7. Timers (purge + backup)
 

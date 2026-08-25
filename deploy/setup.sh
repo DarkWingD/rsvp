@@ -11,29 +11,31 @@ set -euo pipefail
 APP_USER="rsvp"
 APP_HOME="/opt/rsvp"
 APP_DIR="${APP_HOME}/app"
-REPO_URL="${1:-https://github.com/DarkWingD/rsvp.git}"
+# Deploy from the folder this script lives in (repo root = deploy/..).
+SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [[ $EUID -ne 0 ]]; then
   echo "Please run as root:  sudo bash deploy/setup.sh" >&2
   exit 1
 fi
 
-echo "==> Installing packages (nodejs, build tools, sqlite, git)"
-dnf install -y nodejs gcc-c++ make python3 sqlite git
+echo "==> Installing packages (nodejs, build tools, sqlite, rsync)"
+dnf install -y nodejs gcc-c++ make python3 sqlite rsync
 
 echo "==> Ensuring service user '${APP_USER}'"
 id -u "${APP_USER}" &>/dev/null || useradd -r -m -d "${APP_HOME}" "${APP_USER}"
 
-echo "==> Fetching code into ${APP_DIR}"
-if [[ -d "${APP_DIR}/.git" ]]; then
-  sudo -u "${APP_USER}" git -C "${APP_DIR}" pull --ff-only
-else
-  sudo -u "${APP_USER}" git clone "${REPO_URL}" "${APP_DIR}"
-fi
+echo "==> Deploying code from ${SRC_DIR} to ${APP_DIR}"
+mkdir -p "${APP_DIR}"
+rsync -a --delete \
+  --exclude '.git' --exclude 'node_modules' --exclude '.env' \
+  --exclude 'data.db*' --exclude 'backups' \
+  "${SRC_DIR}/" "${APP_DIR}/"
+chown -R "${APP_USER}:${APP_USER}" "${APP_HOME}"
 
 echo "==> Installing dependencies and building CSS"
 cd "${APP_DIR}"
-sudo -u "${APP_USER}" npm ci
+sudo -u "${APP_USER}" npm ci || sudo -u "${APP_USER}" npm install
 sudo -u "${APP_USER}" npm run css:build
 
 if [[ ! -f "${APP_DIR}/.env" ]]; then

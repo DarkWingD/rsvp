@@ -4,6 +4,7 @@ const { themes } = require('./config');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function cleanStr(v, max) {
   return String(v == null ? '' : v).trim().slice(0, max);
@@ -41,6 +42,14 @@ function parseEventForm(body) {
   const ask_dietary = has_food && checked(body.ask_dietary);
   const guests_see_each_other = checked(body.guests_see_each_other);
 
+  const notify_method = body.notify_method === 'email' ? 'email' : 'direct_link';
+
+  const access_mode = body.access_mode === 'open_link' ? 'open_link' : 'per_guest';
+  const ask_adults = checked(body.ask_adults);
+  const ask_kids = checked(body.ask_kids);
+  let public_visibility = cleanStr(body.public_visibility, 10);
+  if (!['none', 'total', 'list'].includes(public_visibility)) public_visibility = 'none';
+
   return {
     errors,
     data: {
@@ -48,9 +57,43 @@ function parseEventForm(body) {
       description: cleanStr(body.description, 4000) || null,
       location: cleanStr(body.location, 300) || null,
       starts_at, ends_at, rsvp_deadline, theme,
-      has_food, ask_dietary, guests_see_each_other,
+      has_food, ask_dietary, guests_see_each_other, notify_method,
+      access_mode, ask_adults, ask_kids, public_visibility,
     },
   };
+}
+
+// Parse a self-serve sign-up on an open-link event.
+function parseSignup(body, event) {
+  const errors = [];
+  const label = cleanStr(body.signup_name, 120);
+  if (!label) errors.push('Please enter your name.');
+  const rsvp = ['yes', 'no', 'maybe'].includes(body.rsvp) ? body.rsvp : null;
+  if (!rsvp) errors.push('Please choose Yes, No, or Maybe.');
+  let adults = 1;
+  if (event.ask_adults) {
+    adults = parseInt(body.adults, 10);
+    if (!Number.isFinite(adults) || adults < 1) adults = 1;
+    if (adults > 30) adults = 30;
+  }
+  let kids = 0;
+  if (event.ask_kids) {
+    kids = parseInt(body.kids, 10);
+    if (!Number.isFinite(kids) || kids < 0) kids = 0;
+    if (kids > 30) kids = 30;
+  }
+  return { errors, data: { label, rsvp, party_size: adults, kids } };
+}
+
+// Parse a single guest (name + email) from the email-mode add form.
+function parseGuestOne(body, requireEmail) {
+  const errors = [];
+  const label = cleanStr(body.guest_name, 120);
+  const email = cleanStr(body.guest_email, 200).toLowerCase();
+  if (!label) errors.push('Name is required.');
+  if (requireEmail && !email) errors.push('Email is required for email invites.');
+  if (email && !EMAIL_RE.test(email)) errors.push('That email doesn’t look valid.');
+  return { errors, data: { label, email: email || null } };
 }
 
 function parseGuestNames(raw, max) {
@@ -74,4 +117,4 @@ function parseRsvpForm(body, askDietary) {
   return { errors, data: { rsvp, party_size, dietary, notes } };
 }
 
-module.exports = { cleanStr, checked, parseEventForm, parseGuestNames, parseRsvpForm };
+module.exports = { cleanStr, checked, parseEventForm, parseGuestNames, parseGuestOne, parseRsvpForm, parseSignup };

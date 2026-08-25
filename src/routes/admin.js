@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAdmin } = require('../auth');
 const m = require('../models');
-const { signupsPaused, setSetting } = require('../db');
+const { signupsPaused, setSetting, emailBlocked, clearEmailBlock } = require('../db');
 const { notifyRequesterApproved } = require('../mail');
 
 router.use(requireAdmin());
@@ -14,11 +14,18 @@ router.get('/', (req, res) => {
     title: 'Admin',
     pending: m.listPendingOrganizers(),
     paused: signupsPaused(),
+    emailCapped: emailBlocked(),
   });
 });
 
+// Manually clear the monthly email block (e.g. after upgrading the Resend plan).
+router.post('/email/clear', (req, res) => {
+  clearEmailBlock();
+  res.redirect('/admin');
+});
+
 // Approve a first-time organiser → their pending events go live; email them their link.
-router.post('/organizers/:id/approve', async (req, res) => {
+router.post('/organisers/:id/approve', async (req, res) => {
   const org = m.getOrganizer(parseInt(req.params.id, 10));
   if (org) {
     m.setOrganizerStatus(org.id, 'approved');
@@ -29,20 +36,20 @@ router.post('/organizers/:id/approve', async (req, res) => {
 });
 
 // Reject (silent — no email).
-router.post('/organizers/:id/reject', (req, res) => {
+router.post('/organisers/:id/reject', (req, res) => {
   const org = m.getOrganizer(parseInt(req.params.id, 10));
   if (org) m.setOrganizerStatus(org.id, 'rejected');
   res.redirect('/admin');
 });
 
 // Revoke an existing organiser → their live/pending events are closed.
-router.post('/organizers/:id/revoke', (req, res) => {
+router.post('/organisers/:id/revoke', (req, res) => {
   const org = m.getOrganizer(parseInt(req.params.id, 10));
   if (org) {
     m.setOrganizerStatus(org.id, 'revoked');
     m.closeEventsForOrganizer(org.id);
   }
-  res.redirect(req.get('referer') || '/admin/events');
+  res.redirect('/admin/events');
 });
 
 router.get('/events', (req, res) => {

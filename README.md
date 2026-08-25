@@ -22,7 +22,7 @@ friends & family — without making your guests create accounts.
  Guest / Organiser
         │  https://rsvp.example.com
         ▼
- ┌──────────────┐   Cloudflare Access gates /admin & /organizer (email PIN)
+ ┌──────────────┐   Cloudflare Access gates /admin & /organiser (email PIN)
  │  Cloudflare  │   Turnstile + WAF + rate limiting at the edge
  └──────┬───────┘
         │  Cloudflare Tunnel (outbound, no open ports)
@@ -153,7 +153,7 @@ Placeholders below (`rsvp.example.com`, `admin@example.com`) — substitute your
 
 4. **Cloudflare Access** (Zero Trust → Access → Applications → Add a self-hosted app):
    - Application domain: `rsvp.example.com`
-   - **Path**: add an application covering `/admin` and `/organizer` **only** (leave `/` and
+   - **Path**: add an application covering `/admin` and `/organiser` **only** (leave `/` and
      `/r/*` public).
    - Policy: **Allow** with a **One-time PIN** login method.
    - Copy the application **Audience (AUD)** tag and your **team domain** into `.env`
@@ -174,7 +174,48 @@ Placeholders below (`rsvp.example.com`, `admin@example.com`) — substitute your
    ```
 
 8. **Resilience**: set the BIOS to *Restore on AC power loss = On*, and confirm the `rsvp` and
-   `cloudflared` services come back after a reboot.
+   `cloudflared` services come back after a reboot. Also disable auto-suspend on a desktop box:
+   ```bash
+   sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+   ```
+
+### Production `.env`
+
+The setup script creates `/opt/rsvp/app/.env` from `.env.example`; fill in your own values.
+`MAIL_FROM` must use a domain (or subdomain) you have **verified in Resend**. Never commit this file.
+
+```bash
+sudo tee /opt/rsvp/app/.env >/dev/null <<'EOF'
+PORT=3000
+BASE_URL=https://rsvp.example.com
+APP_TZ=Australia/Brisbane
+SECRET=<long random string, e.g. `openssl rand -hex 32`>
+ADMIN_EMAIL=you@example.com
+CF_ACCESS_TEAM_DOMAIN=https://YOURTEAM.cloudflareaccess.com
+CF_ACCESS_AUD=<your Access application AUD tag>
+DEV_BYPASS_AUTH=false
+RESEND_API_KEY=<your Resend API key, or leave blank to disable email>
+MAIL_FROM=RSVP <no-reply@rsvp.example.com>
+PURGE_DAYS=30
+EOF
+sudo chown rsvp:rsvp /opt/rsvp/app/.env && sudo chmod 600 /opt/rsvp/app/.env
+sudo systemctl enable --now rsvp
+```
+
+### Applying updates
+
+To ship code changes to a running deployment:
+
+1. Get the updated code into the folder you first ran `setup.sh` from — `git pull`, or copy it
+   across (e.g. `scp`/`rsync`).
+2. Re-run the provisioning script:
+   ```bash
+   cd ~/rsvp && sudo bash deploy/setup.sh
+   ```
+   It rsyncs the code into `/opt/rsvp/app`, reinstalls dependencies, rebuilds CSS, and
+   **restarts the service**. Your `.env` and `data.db` are preserved, and any new database
+   columns are added automatically on the next start.
+3. Verify: `systemctl status rsvp --no-pager` and load the site.
 
 ---
 

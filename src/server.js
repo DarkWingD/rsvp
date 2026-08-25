@@ -8,8 +8,12 @@ const rateLimit = require('express-rate-limit');
 
 const config = require('./config');
 const { formatDateTime, formatDate, formatTimeOnly } = require('./time');
+const { isHttpUrl, mapLabel } = require('./location');
 require('./db'); // initialise schema on startup
 const { runPurge } = require('./purge');
+
+// Changes every restart/deploy → appended to asset URLs to bust browser + Cloudflare caches.
+const ASSET_VERSION = Date.now().toString(36);
 
 const app = express();
 app.set('trust proxy', true); // behind Cloudflare Tunnel
@@ -28,6 +32,7 @@ app.use(helmet({
       connectSrc: ["'self'", 'https://challenges.cloudflare.com'],
       baseUri: ["'self'"],
       formAction: ["'self'"],
+      frameAncestors: ["'self'"],
     },
   },
 }));
@@ -72,10 +77,13 @@ app.use((req, res, next) => {
   res.locals.fmtDateTime = formatDateTime;
   res.locals.fmtDate = formatDate;
   res.locals.fmtTime = formatTimeOnly;
+  res.locals.isUrl = isHttpUrl;
+  res.locals.mapLabel = mapLabel;
   res.locals.baseUrl = config.baseUrl;
   res.locals.appTz = config.tz;
   res.locals.turnstileSiteKey = config.turnstile.siteKey;
   res.locals.currentPath = req.path;
+  res.locals.assetVer = ASSET_VERSION;
   next();
 });
 
@@ -83,7 +91,8 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => res.render('home', { title: 'RSVP' }));
 app.get('/privacy', (req, res) => res.render('privacy', { title: 'Privacy', purgeDays: config.purgeDays }));
 app.use('/r', require('./routes/guest'));
-app.use('/organizer', require('./routes/organizer'));
+app.use('/e', require('./routes/signup'));
+app.use('/organiser', require('./routes/organizer'));
 app.use('/admin', require('./routes/admin'));
 
 // 404
@@ -100,10 +109,17 @@ app.use((err, req, res, next) => {
 try { runPurge(); } catch (e) { console.error('[purge:startup]', e.message); }
 setInterval(() => { try { runPurge(); } catch (e) { console.error('[purge:interval]', e.message); } }, 6 * 3600 * 1000);
 
+// Safety: never allow the auth bypass to run alongside a real Cloudflare Access config
+// (that would silently disable authentication in production).
+if (config.devBypassAuth && config.cf.teamDomain) {
+  console.error('FATAL: DEV_BYPASS_AUTH=true while Cloudflare Access is configured. Refusing to start — set DEV_BYPASS_AUTH=false in production.');
+  process.exit(1);
+}
+
 app.listen(config.port, '127.0.0.1', () => {
   console.log(`RSVP listening on http://127.0.0.1:${config.port}  (public: ${config.baseUrl})`);
   if (config.devBypassAuth) console.warn('⚠  DEV_BYPASS_AUTH is ON — authentication is bypassed. Do NOT use in production.');
   if (!config.cf.teamDomain && !config.devBypassAuth) {
-    console.warn('⚠  Cloudflare Access is not configured (CF_ACCESS_TEAM_DOMAIN). /organizer and /admin will reject.');
+    console.warn('⚠  Cloudflare Access is not configured (CF_ACCESS_TEAM_DOMAIN). /organiser and /admin will reject.');
   }
 });

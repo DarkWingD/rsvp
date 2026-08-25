@@ -9,7 +9,7 @@
 <% if (error) { %><div class="banner banner-error"><%= error %></div><% } %>
 
 <div class="card">
-  <form method="post" action="/organizer/request">
+  <form method="post" action="/organiser/request">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="field">
       <label for="display_name">Your name (optional)</label>

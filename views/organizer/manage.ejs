@@ -7,7 +7,7 @@
   <span class="tag tag-<%= event.status %>"><%= event.status %></span>
 </div>
 <div class="meta"><span class="ico">📅</span><span><%= fmtDateTime(event.starts_at) %><% if (event.ends_at) { %> – <%= fmtTime(event.ends_at) %><% } %></span></div>
-<% if (event.location) { %><div class="meta"><span class="ico">📍</span><span><%= event.location %></span></div><% } %>
+<% if (event.location) { %><div class="meta"><span class="ico">📍</span><% if (isUrl(event.location)) { %><a href="<%= event.location %>" target="_blank" rel="noopener noreferrer"><%= mapLabel(event.location) %> ↗</a><% } else { %><span><%= event.location %></span><% } %></div><% } %>
 
 <% if (event.status === 'cancelled') { %>
   <div class="banner banner-error" style="margin-top:12px">This event is cancelled. Guests see a cancelled notice on their links.</div>
@@ -15,11 +15,14 @@
   <div class="banner banner-info" style="margin-top:12px">Awaiting approval — guest links won't work until the site owner approves you.</div>
 <% } %>
 
+<% if (event.notify_method === 'email' && emailCapped) { %><div class="banner banner-error" style="margin-top:12px">⚠ The free email limit has been reached this month. Email invites &amp; reminders are paused until it resets.</div><% } %>
+<% if (event.notify_method === 'email' && !mailEnabled) { %><div class="banner banner-info" style="margin-top:12px">Email isn't configured on the server, so invites won't send. You can still share guest links manually.</div><% } %>
+
 <div class="btn-row" style="margin:14px 0">
-  <a class="btn btn-sm" href="/organizer/events/<%= event.id %>/edit">Edit</a>
-  <a class="btn btn-sm" href="/organizer/events/<%= event.id %>/export.csv">Export CSV</a>
+  <a class="btn btn-sm" href="/organiser/events/<%= event.id %>/edit">Edit</a>
+  <a class="btn btn-sm" href="/organiser/events/<%= event.id %>/export.csv">Export CSV</a>
   <% if (event.status === 'live' || event.status === 'pending') { %>
-  <form class="inline-form" method="post" action="/organizer/events/<%= event.id %>/cancel" data-confirm="Cancel this event? Guests will see a cancelled notice.">
+  <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/cancel" data-confirm="Cancel this event? Guests will see a cancelled notice.">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <button class="btn btn-sm btn-danger">Cancel event</button>
   </form>
@@ -33,56 +36,139 @@
     <span class="stat"><b><%= stats.no %></b> no</span>
     <span class="stat muted"><%= stats.pending %> no reply</span>
     <span class="stat">·&nbsp; <b><%= stats.headcount %></b> total coming</span>
+    <% if (event.access_mode === 'open_link' && event.ask_kids) { %><span class="stat muted"><%= stats.adults %> adults · <%= stats.kids %> kids</span><% } %>
   </div>
 </div>
 
+<% if (event.access_mode === 'open_link') { %>
+<div class="card">
+  <h2>Shared sign-up link</h2>
+  <p class="muted small">Share this one link — people fill in their own name and numbers.</p>
+  <div class="btn-row" style="align-items:center">
+    <input type="text" readonly value="<%= baseUrl %>/e/<%= event.public_token %>" style="flex:1; min-width:0; font-size:.85rem">
+    <button class="btn btn-sm" data-copy="<%= baseUrl %>/e/<%= event.public_token %>">Copy</button>
+    <a class="btn btn-sm" href="/e/<%= event.public_token %>" target="_blank" rel="noopener">Open ↗</a>
+  </div>
+</div>
+<% } else { %>
 <div class="card">
   <h2>Add guests</h2>
-  <form method="post" action="/organizer/events/<%= event.id %>/guests">
-    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-    <div class="field">
-      <label for="names">One name per line</label>
-      <textarea id="names" name="names" placeholder="Sarah&#10;Tom&#10;Priya"></textarea>
-      <div class="hint">Each guest gets their own private link. Max <%= caps.guestsPerEvent %> guests per event.</div>
-    </div>
-    <button class="btn btn-primary" type="submit">Add guests</button>
-  </form>
+  <% if (event.notify_method === 'email') { %>
+    <form method="post" action="/organiser/events/<%= event.id %>/guests">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="row2">
+        <div class="field"><label for="guest_name">Name</label><input type="text" id="guest_name" name="guest_name" maxlength="120" required <%= (typeof msg !== 'undefined' && msg) ? 'autofocus' : '' %>></div>
+        <div class="field"><label for="guest_email">Email</label><input type="email" id="guest_email" name="guest_email" maxlength="200" required></div>
+      </div>
+      <button class="btn btn-primary" type="submit">Add guest</button>
+      <div class="hint" style="margin-top:6px">Add guests one at a time, then use “Send invites” below. Max <%= caps.guestsPerEvent %> per event.</div>
+    </form>
+  <% } else { %>
+    <form method="post" action="/organiser/events/<%= event.id %>/guests">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field">
+        <label for="names">One name per line</label>
+        <textarea id="names" name="names" placeholder="Sarah&#10;Tom&#10;Priya"></textarea>
+        <div class="hint">Each guest gets their own private link. Max <%= caps.guestsPerEvent %> guests per event.</div>
+      </div>
+      <button class="btn btn-primary" type="submit">Add guests</button>
+    </form>
+  <% } %>
 </div>
+<% } %>
+
+<% if (typeof msg !== 'undefined' && msg) { %><div class="banner banner-success"><%= msg %></div><% } %>
+<% if (typeof error !== 'undefined' && error) { %><div class="banner banner-error"><%= error %></div><% } %>
+
+<% if (event.access_mode !== 'open_link' && event.notify_method === 'email') { %>
+<div class="card">
+  <h2>Email invites</h2>
+  <p class="muted small">Invites go to guests you haven't emailed yet; reminders go to those who haven't replied.</p>
+  <div class="btn-row">
+    <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/invites/send" data-confirm="This will email an invite to <%= notInvitedCount %> guest(s) who haven't been invited yet. Send now?">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-primary btn-sm" <%= (notInvitedCount && !emailCapped) ? '' : 'disabled' %>>Send invites (<%= notInvitedCount %>)</button>
+    </form>
+    <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/reminders/send" data-confirm="This will email a reminder to <%= nonResponderCount %> guest(s) who haven't replied yet. Send now?">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-sm" <%= (nonResponderCount && !emailCapped) ? '' : 'disabled' %>>Remind non-responders (<%= nonResponderCount %>)</button>
+    </form>
+  </div>
+</div>
+<% } %>
 
 <div class="card">
-  <h2>Guests (<%= allCount %>)</h2>
+  <h2><%= event.access_mode === 'open_link' ? 'Sign-ups' : 'Guests' %> (<%= allCount %>)</h2>
 
   <div class="filters">
     <% ['all','noreply','yes','maybe','no'].forEach(function (f) { %>
-      <a class="btn btn-sm <%= filter === f ? 'active' : '' %>" href="/organizer/events/<%= event.id %>?filter=<%= f %>"><%= f === 'noreply' ? 'no reply' : f %></a>
+      <a class="btn btn-sm <%= filter === f ? 'active' : '' %>" href="/organiser/events/<%= event.id %>?filter=<%= f %>"><%= f === 'noreply' ? 'no reply' : f %></a>
     <% }) %>
   </div>
 
   <% if (!guests.length) { %>
-    <p class="muted">No guests<%= filter !== 'all' ? ' match this filter' : ' yet — add some above' %>.</p>
+    <p class="muted">No <%= event.access_mode === 'open_link' ? 'sign-ups' : 'guests' %><%= filter !== 'all' ? ' match this filter' : ' yet' %>.</p>
   <% } else { %>
+    <% if (event.access_mode !== 'open_link') { %>
     <button class="btn btn-sm" data-copy-target="#alllinks" style="margin-bottom:10px">Copy all shown links</button>
     <textarea id="alllinks" style="position:absolute; left:-9999px" aria-hidden="true"><% guests.forEach(function (g) { %><%= guestUrl(g) %>
 <% }) %></textarea>
+    <% } %>
 
     <table class="table">
-      <thead><tr><th>Name</th><th>RSVP</th><th>Link</th><th></th></tr></thead>
+      <thead><tr>
+        <th>Name</th><th>RSVP</th>
+        <% if (event.access_mode === 'open_link') { %>
+          <% if (event.ask_adults) { %><th>Adults</th><% } %>
+          <% if (event.ask_kids) { %><th>Kids</th><% } %>
+        <% } else { %>
+          <% if (event.notify_method === 'email') { %><th>Email</th><th>Invited</th><% } %>
+          <th>Link</th>
+        <% } %>
+        <th></th>
+      </tr></thead>
       <tbody>
         <% guests.forEach(function (g) { %>
         <tr>
           <td>
-            <%= g.label %><% if (g.rsvp === 'yes' && g.party_size > 1) { %> <span class="muted small">×<%= g.party_size %></span><% } %>
-            <% if (g.dietary) { %><br><span class="muted small">🍽 <%= g.dietary %></span><% } %>
-            <% if (g.notes) { %><br><span class="muted small">💬 <%= g.notes %></span><% } %>
+            <%= g.label %>
+            <% if (event.access_mode !== 'open_link') { %>
+              <% if (g.rsvp === 'yes' && g.party_size > 1) { %> <span class="muted small">×<%= g.party_size %></span><% } %>
+              <% if (g.dietary) { %><br><span class="muted small">🍽 <%= g.dietary %></span><% } %>
+              <% if (g.notes) { %><br><span class="muted small">💬 <%= g.notes %></span><% } %>
+            <% } %>
           </td>
           <td><span class="tag tag-<%= g.rsvp %>"><%= g.rsvp === 'pending' ? 'no reply' : g.rsvp %></span></td>
-          <td><button class="btn btn-sm" data-copy="<%= guestUrl(g) %>">Copy</button></td>
+          <% if (event.access_mode === 'open_link') { %>
+            <% if (event.ask_adults) { %><td class="small"><%= g.party_size %></td><% } %>
+            <% if (event.ask_kids) { %><td class="small"><%= g.kids %></td><% } %>
+          <% } else { %>
+            <% if (event.notify_method === 'email') { %>
+            <td class="small">
+              <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/guests/<%= g.id %>/email" style="display:flex; gap:4px; align-items:center">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="email" name="email" value="<%= g.email || '' %>" maxlength="200" placeholder="add email" style="width:150px; padding:4px 6px; font-size:.8rem">
+                <button class="btn btn-sm" title="Save email">Save</button>
+              </form>
+            </td>
+            <td class="small"><%= g.invited_at ? '✓' : '—' %></td>
+            <% } %>
+            <td><button class="btn btn-sm" data-copy="<%= guestUrl(g) %>">Copy</button></td>
+          <% } %>
           <td style="white-space:nowrap">
-            <form class="inline-form" method="post" action="/organizer/events/<%= event.id %>/guests/<%= g.id %>/regenerate" data-confirm="Make a new link? The old link will stop working.">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <button class="btn btn-sm" title="New link">↻</button>
-            </form>
-            <form class="inline-form" method="post" action="/organizer/events/<%= event.id %>/guests/<%= g.id %>/delete" data-confirm="Remove this guest?">
+            <% if (event.access_mode !== 'open_link') { %>
+              <% if (event.notify_method === 'email') { %>
+              <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/guests/<%= g.id %>/invite" data-confirm="Email the invite to <%= g.label %> now?">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm" title="<%= g.invited_at ? 'Resend invite' : 'Send invite' %>" <%= (!g.email || emailCapped) ? 'disabled' : '' %>>✉</button>
+              </form>
+              <% } %>
+              <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/guests/<%= g.id %>/regenerate" data-confirm="Make a new link? The old link will stop working.">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm" title="New link">↻</button>
+              </form>
+            <% } %>
+            <form class="inline-form" method="post" action="/organiser/events/<%= event.id %>/guests/<%= g.id %>/delete" data-confirm="Remove <%= event.access_mode === 'open_link' ? 'this sign-up' : 'this guest' %>?">
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <button class="btn btn-sm btn-danger" title="Remove">✕</button>
             </form>
@@ -105,6 +191,6 @@
   </div>
 <% } %>
 
-<p><a href="/organizer">← Back to your events</a></p>
+<p><a href="/organiser">← Back to your events</a></p>
 
 <%- include('../partials/foot') %>
