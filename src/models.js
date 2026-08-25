@@ -31,7 +31,16 @@ function getOrganizer(id) {
 function ensureOrganizer(email, displayName = null) {
   email = String(email).toLowerCase();
   let org = findOrganizerByEmail(email);
-  if (org) return org;
+  if (org) {
+    // A returning pending requester gets a fresh retention clock — otherwise
+    // their new request sits on the old row's 30-day-old created_at and the
+    // nightly purge can delete it (and with it, the FK for their new event).
+    if (org.status === 'pending') {
+      db.prepare('UPDATE organizers SET created_at = ? WHERE id = ?').run(now(), org.id);
+      org = findOrganizerByEmail(email);
+    }
+    return org;
+  }
   const status = email === adminEmail ? 'approved' : 'pending';
   const created = now();
   const info = _orgInsert.run(email, displayName, status, created);

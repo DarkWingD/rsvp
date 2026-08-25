@@ -9,6 +9,9 @@ const { verifyTurnstile } = require('../turnstile');
 const { isPastDate, isPastLocal } = require('../time');
 
 function loadEvent(req, res, next) {
+  // Every response on a capability-token path stays uncached, including the
+  // 409 renders that bypass the render() helper below.
+  res.set('Cache-Control', 'no-store');
   const event = m.getEventByPublicToken(req.params.token);
   if (!event || event.access_mode !== 'open_link') {
     return res.status(404).render('guest/notfound', { title: 'Not found' });
@@ -27,7 +30,6 @@ function readonlyReason(ev) {
 
 function render(req, res, extra) {
   const ev = req.event;
-  res.set('Cache-Control', 'no-store');
   const visible = ev.public_visibility;
   const stats = (visible === 'total' || visible === 'list') ? m.eventStats(ev.id) : null;
   const list = visible === 'list' ? m.publicAttendees(ev.id) : [];
@@ -46,13 +48,16 @@ router.post('/:token', loadEvent, async (req, res) => {
     readonly: reason, stats: null, list: [], done: false, values: {},
     error: 'This event is no longer accepting responses.',
   });
-  if (m.countGuests(req.event.id) >= config.caps.guestsPerEvent) {
-    return render(req, res, { error: 'This event is full.', values: req.body });
-  }
   // The shared link is semi-public (group chats get forwarded); Turnstile keeps
   // scripted junk sign-ups from polluting a real event's list.
   const human = await verifyTurnstile(req.body['cf-turnstile-response'], req.ip);
   if (!human) return render(req, res, { error: 'Captcha check failed. Please try again.', values: req.body });
+  // Capacity check AFTER the awaited captcha round-trip: checking before it
+  // would let concurrent requests all pass the check and overfill the event
+  // (the handler was atomic when it was fully synchronous).
+  if (m.countGuests(req.event.id) >= config.caps.guestsPerEvent) {
+    return render(req, res, { error: 'This event is full.', values: req.body });
+  }
   const { errors, data } = parseSignup(req.body, req.event);
   if (errors.length) return render(req, res, { error: errors.join(' '), values: req.body });
   m.addSignup(req.event.id, data);
